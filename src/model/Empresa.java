@@ -1,4 +1,6 @@
 package model;
+import model.Persona;
+import model.Usuarios;
 import javax.swing.JOptionPane;
 
 public class Empresa extends Persona {

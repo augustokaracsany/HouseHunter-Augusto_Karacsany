@@ -1,9 +1,11 @@
 package model;
+import model.Persona;
+import model.Usuarios;
 import javax.swing.JOptionPane;
 
 public class Administrador extends Persona {
 
-    public Administrador(String email, String password, String nombre, String rol) {
+    public Administrador(String email, String password, String nombre) {
         super(email, password, nombre, "Admin Hotel");
     }
 
