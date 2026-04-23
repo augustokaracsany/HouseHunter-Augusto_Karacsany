@@ -49,15 +49,15 @@ public class Administrador extends Persona {
 
     private void subMenuCheckIn() {
         String[] sub = {"Validar invitado autorizado", "Registrar check-in exitoso ", "Volver"};
-        int op;
+        String op;
         do {
-            op = JOptionPane.showOptionDialog(null, "Check-in", "Submenu", 0, JOptionPane.INFORMATION_MESSAGE, null, sub, sub[0]);
+            op = (String)JOptionPane.showInputDialog(null, "Check-in", "Submenu", 0,null, sub, sub[0]);
             switch (op) {
-                case 0: mostrarMensaje("Validar invitado autorizado"); break;
-                case 1: mostrarMensaje("Check-in exitoso"); break;
-                case 2: break;
+                case "Validar invitado autorizado": mostrarMensaje("Validar invitado autorizado"); break;
+                case "Registrar check-in exitoso ": mostrarMensaje("Check-in exitoso"); break;
+                case "Volver": break;
             }
-        } while (op != 2);
+        } while (!op.equals("Volver"));
     }
 
     private void subMenuHabitacion() {
