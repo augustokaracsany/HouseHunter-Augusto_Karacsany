@@ -1,4 +1,6 @@
 package model;
+
+
 import javax.swing.JOptionPane;
 
 public class Invitado extends Persona {

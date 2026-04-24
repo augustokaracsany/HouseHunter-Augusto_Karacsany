@@ -1,4 +1,5 @@
 package model;
+
 import javax.swing.JOptionPane;
 
 public class Empresa extends Persona {
