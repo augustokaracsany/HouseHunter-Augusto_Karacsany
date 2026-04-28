@@ -1,15 +1,14 @@
-package model;
-
+package BLL;
 
 import javax.swing.JOptionPane;
 
 public class Administrador extends Persona {
 
-    public Administrador(String email, String password, String nombre) {
-        super(email, password, nombre, "Admin Hotel");
+    public Administrador(String email, String password, String nombre, Rol rol) {
+        super(email, password, nombre, rol);
     }
 
-    
+    @Override
     public void mostrarMenu() {
         String[] opciones = {
             "Check-in de invitado",
@@ -44,33 +43,33 @@ public class Administrador extends Persona {
                 case 6: mostrarMensaje("Generar reporte de evento"); break;
                 case 7: JOptionPane.showMessageDialog(null, "Sesion cerrada."); break;
             }
-        } while (opcion != 7);
+        } while (opcion != 7 && opcion != -1); // -1 es si cierra la ventana
     }
 
     private void subMenuCheckIn() {
-        String[] sub = {"Validar invitado autorizado", "Registrar check-in exitoso ", "Volver"};
+        String[] sub = {"Validar invitado autorizado", "Registrar check-in exitoso", "Volver"};
         String op;
         do {
-            op = (String)JOptionPane.showInputDialog(null, "Check-in", "Submenu", 0,null, sub, sub[0]);
+            op = (String)JOptionPane.showInputDialog(null, "Check-in", "Submenu", 0, null, sub, sub[0]);
+            if(op == null) break;
             switch (op) {
                 case "Validar invitado autorizado": mostrarMensaje("Validar invitado autorizado"); break;
-                case "Registrar check-in exitoso ": mostrarMensaje("Check-in exitoso"); break;
+                case "Registrar check-in exitoso": mostrarMensaje("Check-in exitoso"); break;
                 case "Volver": break;
             }
         } while (!op.equals("Volver"));
     }
 
     private void subMenuHabitacion() {
-        String[] sub = {"Validar disponibilidad de habitacion", "Asignar habitacion)", "Volver"};
+        String[] sub = {"Validar disponibilidad", "Asignar habitacion", "Volver"};
         int op;
         do {
-            op = JOptionPane.showOptionDialog(null, "Asignar habitacion", "Submenu", 0, JOptionPane.INFORMATION_MESSAGE, null, sub, sub[0]);
+            op = JOptionPane.showOptionDialog(null, "Gestion Habitaciones", "Submenu", 0, JOptionPane.INFORMATION_MESSAGE, null, sub, sub[0]);
             switch (op) {
                 case 0: mostrarMensaje("Validar habitacion"); break;
                 case 1: mostrarMensaje("Asignar habitacion"); break;
-                case 2: break;
             }
-        } while (op != 2);
+        } while (op != 2 && op != -1);
     }
 
     private void subMenuPremio() {
@@ -81,9 +80,8 @@ public class Administrador extends Persona {
             switch (op) {
                 case 0: mostrarMensaje("Obtener un ganador"); break;
                 case 1: mostrarMensaje("Entregar premio"); break;
-                case 2: break;
             }
-        } while (op != 2);
+        } while (op != 2 && op != -1);
     }
 
     private void mostrarMensaje(String accion) {
