@@ -6,7 +6,7 @@ public abstract class Persona {
     protected String password;
     protected Rol rol;
 
-    // Constructor que coincide con lo que necesitan las hijas
+    // Constructor Fixeado.
     public Persona(String email, String password, Rol rol) {
         this.email = email;
         this.password = password;

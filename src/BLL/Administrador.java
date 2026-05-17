@@ -52,45 +52,85 @@ public class Administrador extends Persona {
     }
 
     private void subMenuRecepcion() {
+        ImageIcon iconoRecepcion = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Recepcion.png");
         String[] opciones = {"Check-in de invitado", "Asignar habitación", "Volver"};
-        int op = JOptionPane.showOptionDialog(null, "<html><b style='width:250px'>Gestión de Recepción</b></html>", "Recepción", 0, 1, null, opciones, opciones[0]);
+        
+        int op = JOptionPane.showOptionDialog(
+            null, "<html><body style='width:250px; text-align:center;'><h3>Gestión de Recepción</h3>Seleccione una acción:</body></html>", 
+            "Recepción", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
+            iconoRecepcion, opciones, opciones[0]
+        );
+        
         if(op == 0) subMenuCheckIn();
         if(op == 1) subMenuHabitacion();
     }
 
     private void subMenuActividades() {
+        ImageIcon iconoActividades = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Actividades.png");
         String[] opciones = {"Monitorear actividades", "Visualizar cronograma", "Actualizar estado", "Entregar premio", "Volver"};
-        int op = JOptionPane.showOptionDialog(null, "<html><b style='width:250px'>Control de Evento</b></html>", "Actividades", 0, 1, null, opciones, opciones[0]);
-        if(op != 4 && op != -1) mostrarMensaje(opciones[op]);
+        
+        int op = JOptionPane.showOptionDialog(
+            null, "<html><body style='width:250px; text-align:center;'><h3>Control de Eventos</h3>Seleccione una opción:</body></html>", 
+            "Actividades", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
+            iconoActividades, opciones, opciones[0]
+        );
+        
+        if (op == 3) {
+            subMenuPremio();
+        } else if(op != 4 && op != -1) {
+            mostrarMensaje(opciones[op]);
+        }
     }
 
     private void subMenuAdminReportes() {
-        mostrarMensaje("Generar reporte de evento");
+        ImageIcon iconoReportes = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Reportes.png");
+        
+        JOptionPane.showOptionDialog(
+            null, "<html><body style='width:250px; text-align:center;'><h3>Módulo de Reportes</h3>¿Desea generar el reporte consolidado?</body></html>", 
+            "Reportes", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
+            iconoReportes, new String[]{"Generar reporte de evento", "Volver"}, "Generar reporte de evento"
+        );
     }
 
     private void subMenuCheckIn() {
+        ImageIcon iconoRecepcion = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Recepcion.png");
         String[] sub = {"Validar invitado autorizado", "Registrar check-in exitoso", "Volver"};
         String op;
         do {
-            op = (String)JOptionPane.showInputDialog(null, "Check-in", "Submenu", 0, null, sub, sub[0]);
+            op = (String)JOptionPane.showInputDialog(
+                null, "Seleccione la operación de check-in:", "Submenú Check-in", 
+                JOptionPane.PLAIN_MESSAGE, iconoRecepcion, sub, sub[0]
+            );
             if(op == null) break;
             if(!op.equals("Volver")) mostrarMensaje(op);
-        } while (op != null && !op.equals("Volver"));
+        } while (!op.equals("Volver"));
     }
 
     private void subMenuHabitacion() {
+        ImageIcon iconoRecepcion = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Recepcion.png");
         String[] sub = {"Validar disponibilidad", "Asignar habitación", "Volver"};
-        int op = JOptionPane.showOptionDialog(null, "Gestión Habitaciones", "Submenu", 0, 1, null, sub, sub[0]);
+        
+        int op = JOptionPane.showOptionDialog(
+            null, "<html><body style='width:250px; text-align:center;'><h3>Gestión Habitaciones</h3></body></html>", 
+            "Submenú Habitaciones", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
+            iconoRecepcion, sub, sub[0]
+        );
         if(op != 2 && op != -1) mostrarMensaje(sub[op]);
     }
 
     private void subMenuPremio() {
+        ImageIcon iconoActividades = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Actividades.png");
         String[] sub = {"Obtener un ganador", "Entregar premio", "Volver"};
-        int op = JOptionPane.showOptionDialog(null, "Entrega de premios", "Submenu", 0, 1, null, sub, sub[0]);
+        
+        int op = JOptionPane.showOptionDialog(
+            null, "<html><body style='width:250px; text-align:center;'><h3>Entrega de Premios</h3></body></html>", 
+            "Submenú Premios", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
+            iconoActividades, sub, sub[0]
+        );
         if(op != 2 && op != -1) mostrarMensaje(sub[op]);
     }
 
     private void mostrarMensaje(String accion) {
-        JOptionPane.showMessageDialog(null, "Funcion: " + accion + "\n(En desarrollo)");
+        JOptionPane.showMessageDialog(null, "Función: " + accion + "\n(En desarrollo)", "Módulo en Construcción", JOptionPane.INFORMATION_MESSAGE);
     }
 }

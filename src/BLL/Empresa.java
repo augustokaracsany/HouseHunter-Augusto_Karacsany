@@ -20,8 +20,8 @@ public class Empresa extends Persona {
 
     @Override
     public void mostrarMenu() {
-    	ImageIcon iconoMenu = new ImageIcon("src/img/HouseHunter_Menu-Empresa.png");
-        // Texto con ancho fijo para que la ventana no se deforme
+        ImageIcon iconoMenu = new ImageIcon("src/img/HouseHunter_Menu-Empresa.png");
+        
         String tituloMenu = "<html><body style='width: 300px; text-align: center;'>"
                           + "<h2>🏢 Panel de Empresa</h2>"
                           + "<b>Entidad:</b> " + getNombre() 
@@ -38,20 +38,15 @@ public class Empresa extends Persona {
         int seleccion;
         do {
             seleccion = JOptionPane.showOptionDialog(
-                null,
-                tituloMenu,
-                "HouseHunter v1.0",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.PLAIN_MESSAGE,
-                iconoMenu, // Aquí podrías poner el logo de HouseHunter si lo cargás como Icon
-                modulos,
-                modulos[0]
+                null, tituloMenu, "HouseHunter v1.0",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
+                iconoMenu, modulos, modulos[0]
             );
 
             switch (seleccion) {
                 case 0: subMenuGestionEvento(); break;
-                case 1: subMenuCronograma(); break; // El que ya tenías
-                case 2: subMenuInvitaciones(); break; // El que ya tenías
+                case 1: subMenuCronograma(); break; 
+                case 2: subMenuInvitaciones(); break; 
                 case 3: subMenuReportes(); break;
                 case 4: JOptionPane.showMessageDialog(null, "Cerrando sesión de " + getNombre()); break;
             }
@@ -59,15 +54,28 @@ public class Empresa extends Persona {
     }
 
     private void subMenuGestionEvento() {
+        ImageIcon iconoGestion = new ImageIcon("src/img/HouseHunter_Menu-Empresa_Gestion.png");
         String[] opciones = {"Realizar Reserva", "Cargar Invitados", "Seleccionar Plantilla", "Volver"};
-        JOptionPane.showOptionDialog(null, "<html><b style='width:250px'>Módulo de Eventos</b></html>", "Gestión", 0, 1, null, opciones, opciones[0]);
+        
+        int op = JOptionPane.showOptionDialog(
+            null, "<html><body style='width:250px; text-align:center;'><h3>Módulo de Eventos</h3>Seleccione una acción:</body></html>", 
+            "Gestión", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
+            iconoGestion, opciones, opciones[0]
+        );
+        
+        if(op != 3 && op != -1) mostrarMensaje(opciones[op]);
     }
 
     private void subMenuCronograma() {
+        ImageIcon iconoPlanif = new ImageIcon("src/img/HouseHunter_Menu-Empresa_Planificacion.png");
         String[] sub = {"Crear actividad", "Asignar importancia", "Guardar cronograma", "Volver"};
         int op;
         do {
-            op = JOptionPane.showOptionDialog(null, "Cronograma", "Submenu", 0, JOptionPane.INFORMATION_MESSAGE, null, sub, sub[0]);
+            op = JOptionPane.showOptionDialog(
+                null, "<html><body style='width:250px; text-align:center;'><h3>Cronograma de Actividades</h3></body></html>", 
+                "Submenú Planificación", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
+                iconoPlanif, sub, sub[0]
+            );
             switch (op) {
                 case 0: mostrarMensaje("Crear actividad"); break;
                 case 1: mostrarMensaje("Asignar importancia"); break;
@@ -77,10 +85,15 @@ public class Empresa extends Persona {
     }
 
     private void subMenuInvitaciones() {
+        ImageIcon iconoInvit = new ImageIcon("src/img/HouseHunter_Menu-Empresa_Invitaciones.png");
         String[] sub = {"Seleccionar asistentes", "Generar token", "Notificar", "Volver"};
         int op;
         do {
-            op = JOptionPane.showOptionDialog(null, "Invitaciones", "Submenu", 0, JOptionPane.INFORMATION_MESSAGE, null, sub, sub[0]);
+            op = JOptionPane.showOptionDialog(
+                null, "<html><body style='width:250px; text-align:center;'><h3>Envío de Invitaciones</h3></body></html>", 
+                "Submenú Invitaciones", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
+                iconoInvit, sub, sub[0]
+            );
             switch (op) {
                 case 0: mostrarMensaje("Seleccionar asistentes"); break;
                 case 1: mostrarMensaje("Generar token"); break;
@@ -90,10 +103,15 @@ public class Empresa extends Persona {
     }
 
     private void subMenuReportes() {
-        String[] sub = {"Seleccionar evento", "Filtrar desempeño", "Estadisticas", "Exportar", "Volver"};
+        ImageIcon iconoReportes = new ImageIcon("src/img/HouseHunter_Menu-Empresa_Reportes.png");
+        String[] sub = {"Seleccionar evento", "Filtrar desempeño", "Estadísticas", "Exportar", "Volver"};
         int op;
         do {
-            op = JOptionPane.showOptionDialog(null, "Reportes", "Submenu", 0, JOptionPane.INFORMATION_MESSAGE, null, sub, sub[0]);
+            op = JOptionPane.showOptionDialog(
+                null, "<html><body style='width:250px; text-align:center;'><h3>Reportes Corporativos</h3></body></html>", 
+                "Submenú Reportes", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
+                iconoReportes, sub, sub[0]
+            );
             switch (op) {
                 case 0: mostrarMensaje("Seleccionar evento"); break;
                 case 1: mostrarMensaje("Filtrar asistencia"); break;
@@ -104,6 +122,6 @@ public class Empresa extends Persona {
     }
 
     private void mostrarMensaje(String accion) {
-        JOptionPane.showMessageDialog(null, "Funcion: " + accion + "\n(En desarrollo)");
+        JOptionPane.showMessageDialog(null, "Función: " + accion + "\n(En desarrollo)", "Módulo en Construcción", JOptionPane.INFORMATION_MESSAGE);
     }
 }

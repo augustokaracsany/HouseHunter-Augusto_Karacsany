@@ -11,7 +11,7 @@ public class UsuariosController extends UsuariosRepository {
     public Persona login(String email, String password) {
         Persona usuario = null;
         
-        // Buscamos al usuario únicamente por su email para traer su información y el hash
+        // Buscamos al usuario únicamente por su email para traer su información y el hash.
         String sql = "SELECT u.*, p.dni, p.nombre, p.apellido, e.cuit, e.razon_social " +
                      "FROM usuarios u " +
                      "LEFT JOIN datos_personas p ON u.id = p.id_usuario " +
@@ -25,16 +25,16 @@ public class UsuariosController extends UsuariosRepository {
             
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    // 1. Extraemos el hash guardado en la base de datos
+                    // 1. Extraemos el hash guardado en la base de datos.
                     String passHasheadaBD = rs.getString("password");
 
-                    // 2. Usamos la interfaz de tu profesor para verificar la clave
+                    // 2. Usamos la interfaz de Gamaliel para verificar la Clave.
                     if (Hashing.verificar(password, passHasheadaBD)) {
                         
                         Rol rolEnum = Rol.valueOf(rs.getString("rol"));
                         String mail = rs.getString("email");
 
-                        // 3. Si coincide, instanciamos la subclase correspondiente
+                        // 3. Si coincide, instanciamos la subclase correspondiente.
                         if (rolEnum == Rol.EMPRESA) {
                             usuario = new Empresa(mail, passHasheadaBD, rs.getString("cuit"), rs.getString("razon_social"), rolEnum);
                         } else if (rolEnum == Rol.ADMINISTRADOR) {

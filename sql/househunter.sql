@@ -26,8 +26,8 @@ CREATE TABLE datos_empresas (
     razon_social VARCHAR(100) NOT NULL,
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE
 );
-
--- INSERTS DE PRUEBA SIN CONTRASEÑAS HASHEADAS CON BCRYPT
+-- BORRAR LOS INSERTS GENERADOS CON IA.
+-- INSERTS DE PRUEBA SIN CONTRASEÑAS HASHEADAS CON BCRYPT.
 
 -- 1. Insertar Administrador (DNI: 11222333)
 -- INSERT INTO usuarios (email, password, rol) VALUES ('admin@hotel.com', '1234', 'ADMINISTRADOR');
