@@ -10,8 +10,6 @@ public class UsuariosController extends UsuariosRepository {
     @Override
     public Persona login(String email, String password) {
         Persona usuario = null;
-        
-        // Buscamos al usuario únicamente por su email para traer su información y el hash.
         String sql = "SELECT u.*, p.dni, p.nombre, p.apellido, e.cuit, e.razon_social " +
                      "FROM usuarios u " +
                      "LEFT JOIN datos_personas p ON u.id = p.id_usuario " +
@@ -25,16 +23,12 @@ public class UsuariosController extends UsuariosRepository {
             
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    // 1. Extraemos el hash guardado en la base de datos.
                     String passHasheadaBD = rs.getString("password");
 
-                    // 2. Usamos la interfaz de Gamaliel para verificar la Clave.
                     if (Hashing.verificar(password, passHasheadaBD)) {
-                        
                         Rol rolEnum = Rol.valueOf(rs.getString("rol"));
                         String mail = rs.getString("email");
 
-                        // 3. Si coincide, instanciamos la subclase correspondiente.
                         if (rolEnum == Rol.EMPRESA) {
                             usuario = new Empresa(mail, passHasheadaBD, rs.getString("cuit"), rs.getString("razon_social"), rolEnum);
                         } else if (rolEnum == Rol.ADMINISTRADOR) {
@@ -95,5 +89,71 @@ public class UsuariosController extends UsuariosRepository {
             System.err.println("Error al listar: " + e.getMessage());
         }
         return lista;
+    }
+
+    @Override
+    public boolean registrar(String email, String password, Rol rol, String datoPrincipal, String datoSecundario) {
+        String sqlUsuario = "INSERT INTO usuarios (email, password, rol) VALUES (?, ?, ?)";
+        Connection con = ConexionController.getInstance().getConnection();
+        
+        try {
+            // Desactivamos el AUTOCOMMIT para manejarlo como una Única Transacción Segura.
+            con.setAutoCommit(false);
+            
+            try (PreparedStatement psUser = con.prepareStatement(sqlUsuario, Statement.RETURN_GENERATED_KEYS)) {
+                psUser.setString(1, email);
+                // 🔐 Acá se Encripta la Clave con la configuración de Gamaliel.
+                psUser.setString(2, Hashing.hash(password));
+                psUser.setString(3, rol.toString());
+                
+                int filasAfectadas = psUser.executeUpdate();
+                if (filasAfectadas == 0) {
+                    con.rollback();
+                    return false;
+                }
+                
+                // Obtenemos el ID Auto-Incremental asignado automáticamente por MySQL.
+                int idUsuarioGenerado = 0;
+                try (ResultSet generatedKeys = psUser.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        idUsuarioGenerado = generatedKeys.getInt(1);
+                    }
+                }
+                
+                // Dependiendo del Rol, insertamos en su tabla de datos complementaria que corresponden.
+                if (rol == Rol.EMPRESA) {
+                    String sqlEmpresa = "INSERT INTO datos_empresas (id_usuario, cuit, razon_social) VALUES (?, ?, ?)";
+                    try (PreparedStatement psEmp = con.prepareStatement(sqlEmpresa)) {
+                        psEmp.setInt(1, idUsuarioGenerado);
+                        psEmp.setString(2, datoPrincipal);  // CUIT.
+                        psEmp.setString(3, datoSecundario); // Razón Social.
+                        psEmp.executeUpdate();
+                    }
+                } else if (rol == Rol.INVITADO) {
+                    String sqlPersona = "INSERT INTO datos_personas (id_usuario, nombre, apellido, dni) VALUES (?, ?, ?, ?)";
+                    try (PreparedStatement psPers = con.prepareStatement(sqlPersona)) {
+                        psPers.setInt(1, idUsuarioGenerado);
+                        psPers.setString(2, datoPrincipal);  // Nombre.
+                        psPers.setString(3, datoSecundario); // Apellido.
+                        psPers.setString(4, "99999999");    // DNI genérico por default para cumplir con la estructura.
+                        psPers.executeUpdate();
+                    }
+                }
+                
+                con.commit(); // Guardamos los cambios confirmados de ambas tablas.
+                System.out.println("ℹ️ Hashing/SQL: Usuario registrado con éxito: " + email);
+                return true;
+                
+            } catch (SQLException e) {
+                con.rollback(); // Si algo falla en el proceso intermedio, volvemos para atrás.
+                System.err.println("Error en transacción de registro: " + e.getMessage());
+                return false;
+            } finally {
+                con.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error de conexión al registrar: " + e.getMessage());
+            return false;
+        }
     }
 }

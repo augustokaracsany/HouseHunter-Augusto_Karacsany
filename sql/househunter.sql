@@ -1,56 +1,142 @@
-DROP DATABASE IF EXISTS househunter;
-CREATE DATABASE househunter;
-USE househunter;
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Servidor: 127.0.0.1
+-- Tiempo de generación: 17-05-2026 a las 21:27:23
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.2.12
 
--- Tabla Padre: Credenciales y Discriminador de Rol.
-CREATE TABLE usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    rol ENUM('ADMINISTRADOR', 'EMPRESA', 'INVITADO') NOT NULL
-);
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
 
--- Tabla Hija 1: Datos para entes con DNI ( Admin e Invitados. )
-CREATE TABLE datos_personas (
-    id_usuario INT PRIMARY KEY,
-    dni VARCHAR(15) UNIQUE NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    apellido VARCHAR(100),
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE
-);
 
--- Tabla Hija 2: Datos para entes con CUIT ( Empresas. )
-CREATE TABLE datos_empresas (
-    id_usuario INT PRIMARY KEY,
-    cuit VARCHAR(20) UNIQUE NOT NULL,
-    razon_social VARCHAR(100) NOT NULL,
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE
-);
--- BORRAR LOS INSERTS GENERADOS CON IA.
--- INSERTS DE PRUEBA SIN CONTRASEÑAS HASHEADAS CON BCRYPT.
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
 
--- 1. Insertar Administrador (DNI: 11222333)
--- INSERT INTO usuarios (email, password, rol) VALUES ('admin@hotel.com', '1234', 'ADMINISTRADOR');
--- INSERT INTO datos_personas (id_usuario, dni, nombre, apellido) VALUES (1, '11222333', 'Martin', 'Waltar');
+--
+-- Base de datos: `househunter`
+--
 
--- 2. Insertar Empresa (CUIT: 30-12345678-9)
--- INSERT INTO usuarios (email, password, rol) VALUES ('info@globant.com', 'empresa123', 'EMPRESA');
--- INSERT INTO datos_empresas (id_usuario, cuit, razon_social) VALUES (2, '30-12345678-9', 'Globant S.A.');
+-- --------------------------------------------------------
 
--- 3. Insertar Invitado (DNI: 44555666)
--- INSERT INTO usuarios (email, password, rol) VALUES ('invitado@gmail.com', 'invitado123', 'INVITADO');
--- INSERT INTO datos_personas (id_usuario, dni, nombre, apellido) VALUES (3, '44555666', 'Luca', 'Borrelli');
+--
+-- Estructura de tabla para la tabla `datos_empresas`
+--
 
--- INSERTS DE PRUEBA CON CONTRASEÑAS HASHEADAS CON BCRYPT
+CREATE TABLE `datos_empresas` (
+  `id_usuario` int(11) NOT NULL,
+  `cuit` varchar(20) NOT NULL,
+  `razon_social` varchar(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- 1. Administrador (Email: admin@hotel.com | Clave real: 1234)
-INSERT INTO usuarios (email, password, rol) VALUES ('admin@hotel.com', '$2a$10$K7SgA6R37pE9AunlW7N6duGz8N17e4u/Tq8HbeB3HkRCHYEqE1iW.', 'ADMINISTRADOR');
-INSERT INTO datos_personas (id_usuario, dni, nombre, apellido) VALUES (1, '11222333', 'Martin', 'Waltar');
+--
+-- Volcado de datos para la tabla `datos_empresas`
+--
 
--- 2. Empresa (Email: info@globant.com | Clave real: empresa123)
-INSERT INTO usuarios (email, password, rol) VALUES ('info@globant.com', '$2a$10$mRzLUnrYwRE0X9aKsn6pruY.9I7uM1I83LzXQk2jM/YnF57r9wTjG', 'EMPRESA');
-INSERT INTO datos_empresas (id_usuario, cuit, razon_social) VALUES (2, '30-12345678-9', 'Globant S.A.');
+INSERT INTO `datos_empresas` (`id_usuario`, `cuit`, `razon_social`) VALUES
+(2, '30-12345678-9', 'Globant S.A.');
 
--- 3. Invitado (Email: invitado@gmail.com | Clave real: invitado123)
-INSERT INTO usuarios (email, password, rol) VALUES ('invitado@gmail.com', '$2a$10$wEHLd1R16zS9xYfF5N2L6ee1Bq6xIoxCisX5GZ7XwY3i6VpBghXMC', 'INVITADO');
-INSERT INTO datos_personas (id_usuario, dni, nombre, apellido) VALUES (3, '44555666', 'Luca', 'Borrelli');
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `datos_personas`
+--
+
+CREATE TABLE `datos_personas` (
+  `id_usuario` int(11) NOT NULL,
+  `dni` varchar(15) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `apellido` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `datos_personas`
+--
+
+INSERT INTO `datos_personas` (`id_usuario`, `dni`, `nombre`, `apellido`) VALUES
+(1, '47299224', 'Augusto', 'Karacsany'),
+(3, '44555666', 'Luca', 'Borrelli'),
+(4, '99999999', 'Franco', 'Colapinto');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuarios`
+--
+
+CREATE TABLE `usuarios` (
+  `id` int(11) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `rol` enum('ADMINISTRADOR','EMPRESA','INVITADO') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `usuarios`
+--
+
+INSERT INTO `usuarios` (`id`, `email`, `password`, `rol`) VALUES
+(1, 'admin@hotel.com', '$2a$10$uF/66Rb9xmS8jD3cSVtP.eXIaRujgfBi9KD8e68y9Zd3NcgD6i83i', 'ADMINISTRADOR'),
+(2, 'info@globant.com', '$2a$10$wjR9D2Q5HYWx41yfG89LE.PQDi.FF7WE7YNxHw4IMbxD9rH12MurC', 'EMPRESA'),
+(3, 'invitado@gmail.com', '$2a$10$q/ABRKqFBznwHcrPci3st.rAjlfxQkZMzrAHGXmSi7zjPMFkUHCo6', 'INVITADO'),
+(4, 'invitado1@gmail.com', '$2a$10$tHd/HAtSKXNyhggL5TYfYe5HcYWe1gA04cLpY0OJG2FIYxMz7u2bm', 'INVITADO');
+
+--
+-- Índices para tablas volcadas
+--
+
+--
+-- Indices de la tabla `datos_empresas`
+--
+ALTER TABLE `datos_empresas`
+  ADD PRIMARY KEY (`id_usuario`),
+  ADD UNIQUE KEY `cuit` (`cuit`);
+
+--
+-- Indices de la tabla `datos_personas`
+--
+ALTER TABLE `datos_personas`
+  ADD PRIMARY KEY (`id_usuario`),
+  ADD UNIQUE KEY `dni` (`dni`);
+
+--
+-- Indices de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
+
+--
+-- AUTO_INCREMENT de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `datos_empresas`
+--
+ALTER TABLE `datos_empresas`
+  ADD CONSTRAINT `datos_empresas_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `datos_personas`
+--
+ALTER TABLE `datos_personas`
+  ADD CONSTRAINT `datos_personas_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
