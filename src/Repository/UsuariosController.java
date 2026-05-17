@@ -10,35 +10,48 @@ public class UsuariosController extends UsuariosRepository {
     @Override
     public Persona login(String email, String password) {
         Persona usuario = null;
-        // SQL con LEFT JOIN para traer datos de las 3 tablas
+        
+        // Buscamos al usuario únicamente por su email para traer su información y el hash
         String sql = "SELECT u.*, p.dni, p.nombre, p.apellido, e.cuit, e.razon_social " +
                      "FROM usuarios u " +
                      "LEFT JOIN datos_personas p ON u.id = p.id_usuario " +
                      "LEFT JOIN datos_empresas e ON u.id = e.id_usuario " +
-                     "WHERE u.email = ? AND u.password = ?";
+                     "WHERE u.email = ?";
         
         Connection con = ConexionController.getInstance().getConnection();
         
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, email);
-            ps.setString(2, password);
             
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    Rol rolEnum = Rol.valueOf(rs.getString("rol"));
-                    String mail = rs.getString("email");
-                    String pass = rs.getString("password");
+                    // 1. Extraemos el hash guardado en la base de datos
+                    String passHasheadaBD = rs.getString("password");
 
-                    if (rolEnum == Rol.EMPRESA) {
-                        usuario = new Empresa(mail, pass, rs.getString("cuit"), rs.getString("razon_social"), rolEnum);
-                    } else if (rolEnum == Rol.ADMINISTRADOR) {
-                        String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
-                        usuario = new Administrador(mail, pass, nombreCompleto, rs.getString("dni"), rolEnum);
+                    // 2. Usamos la interfaz de tu profesor para verificar la clave
+                    if (Hashing.verificar(password, passHasheadaBD)) {
+                        
+                        Rol rolEnum = Rol.valueOf(rs.getString("rol"));
+                        String mail = rs.getString("email");
+
+                        // 3. Si coincide, instanciamos la subclase correspondiente
+                        if (rolEnum == Rol.EMPRESA) {
+                            usuario = new Empresa(mail, passHasheadaBD, rs.getString("cuit"), rs.getString("razon_social"), rolEnum);
+                        } else if (rolEnum == Rol.ADMINISTRADOR) {
+                            String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
+                            usuario = new Administrador(mail, passHasheadaBD, nombreCompleto, rs.getString("dni"), rolEnum);
+                        } else {
+                            usuario = new Invitado(mail, passHasheadaBD, rs.getString("nombre"), rolEnum);
+                        }
+                        
+                        usuario.setId(rs.getInt("id"));
+                        System.out.println("ℹ️ Hashing: Login exitoso para el usuario: " + mail);
+                        
                     } else {
-                        // Para el Invitado
-                        usuario = new Invitado(mail, pass, rs.getString("nombre"), rolEnum);
+                        System.out.println("❌ Hashing: Contraseña incorrecta para el usuario: " + email);
                     }
-                    usuario.setId(rs.getInt("id"));
+                } else {
+                    System.out.println("❌ Hashing: No se encontró ningún usuario con el email: " + email);
                 }
             }
         } catch (SQLException e) {
@@ -50,7 +63,6 @@ public class UsuariosController extends UsuariosRepository {
     @Override
     public LinkedList<Persona> listarTodos() {
         LinkedList<Persona> lista = new LinkedList<>();
-        // El listar todos también necesita los JOINS para no traer objetos vacíos
         String sql = "SELECT u.*, p.dni, p.nombre, p.apellido, e.cuit, e.razon_social " +
                      "FROM usuarios u " +
                      "LEFT JOIN datos_personas p ON u.id = p.id_usuario " +

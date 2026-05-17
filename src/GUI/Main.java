@@ -2,6 +2,7 @@ package GUI;
 
 import javax.swing.JOptionPane;
 import BLL.Persona;
+import Repository.Hashing;
 import Repository.UsuariosController;
 import Repository.UsuariosRepository;
 import java.util.LinkedList;
@@ -17,7 +18,7 @@ public class Main {
         while (!salir) {
             String email = JOptionPane.showInputDialog("Ingrese su email:");
             if (email == null) break; // Si presiona cancelar
-
+            System.out.println("Tu nuevo hash compatible: " + Hashing.hash("1234"));
             String password = JOptionPane.showInputDialog("Ingrese su contraseña:");
             
             Persona usuario = repo.login(email, password);
