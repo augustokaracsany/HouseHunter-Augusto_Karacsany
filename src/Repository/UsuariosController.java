@@ -1,4 +1,5 @@
 package Repository;
+
 import BLL.*;
 import DLL.ConexionController;
 import java.sql.*;
@@ -9,9 +10,13 @@ public class UsuariosController extends UsuariosRepository {
     @Override
     public Persona login(String email, String password) {
         Persona usuario = null;
-        String sql = "SELECT * FROM usuarios WHERE email = ? AND password = ?";
+        // SQL con LEFT JOIN para traer datos de las 3 tablas
+        String sql = "SELECT u.*, p.dni, p.nombre, p.apellido, e.cuit, e.razon_social " +
+                     "FROM usuarios u " +
+                     "LEFT JOIN datos_personas p ON u.id = p.id_usuario " +
+                     "LEFT JOIN datos_empresas e ON u.id = e.id_usuario " +
+                     "WHERE u.email = ? AND u.password = ?";
         
-        // Obtenemos la conexión fuera del try
         Connection con = ConexionController.getInstance().getConnection();
         
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -20,14 +25,19 @@ public class UsuariosController extends UsuariosRepository {
             
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    String rolStr = rs.getString("rol");
-                    Rol rolEnum = Rol.valueOf(rolStr);
-                    
-                    // Instanciamos según el rol
-                    if (rolEnum == Rol.ADMINISTRADOR) usuario = new Administrador(rs.getString("email"), rs.getString("password"), rs.getString("nombre"), rolEnum);
-                    else if (rolEnum == Rol.EMPRESA) usuario = new Empresa(rs.getString("email"), rs.getString("password"), rs.getString("nombre"), rolEnum);
-                    else usuario = new Invitado(rs.getString("email"), rs.getString("password"), rs.getString("nombre"), rolEnum);
-                    
+                    Rol rolEnum = Rol.valueOf(rs.getString("rol"));
+                    String mail = rs.getString("email");
+                    String pass = rs.getString("password");
+
+                    if (rolEnum == Rol.EMPRESA) {
+                        usuario = new Empresa(mail, pass, rs.getString("cuit"), rs.getString("razon_social"), rolEnum);
+                    } else if (rolEnum == Rol.ADMINISTRADOR) {
+                        String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
+                        usuario = new Administrador(mail, pass, nombreCompleto, rs.getString("dni"), rolEnum);
+                    } else {
+                        // Para el Invitado
+                        usuario = new Invitado(mail, pass, rs.getString("nombre"), rolEnum);
+                    }
                     usuario.setId(rs.getInt("id"));
                 }
             }
@@ -40,7 +50,12 @@ public class UsuariosController extends UsuariosRepository {
     @Override
     public LinkedList<Persona> listarTodos() {
         LinkedList<Persona> lista = new LinkedList<>();
-        String sql = "SELECT * FROM usuarios";
+        // El listar todos también necesita los JOINS para no traer objetos vacíos
+        String sql = "SELECT u.*, p.dni, p.nombre, p.apellido, e.cuit, e.razon_social " +
+                     "FROM usuarios u " +
+                     "LEFT JOIN datos_personas p ON u.id = p.id_usuario " +
+                     "LEFT JOIN datos_empresas e ON u.id = e.id_usuario";
+                     
         Connection con = ConexionController.getInstance().getConnection();
         
         try (PreparedStatement ps = con.prepareStatement(sql);
@@ -49,9 +64,17 @@ public class UsuariosController extends UsuariosRepository {
             while (rs.next()) {
                 Rol rolEnum = Rol.valueOf(rs.getString("rol"));
                 Persona p;
-                if (rolEnum == Rol.ADMINISTRADOR) p = new Administrador(rs.getString("email"), rs.getString("password"), rs.getString("nombre"), rolEnum);
-                else if (rolEnum == Rol.EMPRESA) p = new Empresa(rs.getString("email"), rs.getString("password"), rs.getString("nombre"), rolEnum);
-                else p = new Invitado(rs.getString("email"), rs.getString("password"), rs.getString("nombre"), rolEnum);
+                String mail = rs.getString("email");
+                String pass = rs.getString("password");
+
+                if (rolEnum == Rol.EMPRESA) {
+                    p = new Empresa(mail, pass, rs.getString("cuit"), rs.getString("razon_social"), rolEnum);
+                } else if (rolEnum == Rol.ADMINISTRADOR) {
+                    String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
+                    p = new Administrador(mail, pass, nombreCompleto, rs.getString("dni"), rolEnum);
+                } else {
+                    p = new Invitado(mail, pass, rs.getString("nombre"), rolEnum);
+                }
                 
                 p.setId(rs.getInt("id"));
                 lista.add(p);

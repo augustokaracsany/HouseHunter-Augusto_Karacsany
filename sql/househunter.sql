@@ -1,23 +1,42 @@
--- 1. Crear la base de datos.
-CREATE DATABASE IF NOT EXISTS househunter;
+DROP DATABASE IF EXISTS househunter;
+CREATE DATABASE househunter;
 USE househunter;
 
--- 2. Crear la tabla de usuarios.
--- IMPORTANTE: Los valores del campo 'rol' deben coincidir con los de Enum Rol.
-CREATE TABLE IF NOT EXISTS usuarios (
+-- Tabla Padre: Credenciales y discriminador de rol
+CREATE TABLE usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password VARCHAR(50) NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    rol VARCHAR(20) NOT NULL -- IMPORTANTE: Valores esperados: ADMINISTRADOR, EMPRESA, INVITADO
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    rol ENUM('ADMINISTRADOR', 'EMPRESA', 'INVITADO') NOT NULL
 );
 
--- 3. Insertar usuarios de testing.
-INSERT INTO usuarios (email, password, nombre, rol) 
-VALUES ('admin@hotel.com', 'admin123', 'Carlos Gomez', 'ADMINISTRADOR');
+-- Tabla Hija 1: Datos para entes con DNI (Admin e Invitados)
+CREATE TABLE datos_personas (
+    id_usuario INT PRIMARY KEY,
+    dni VARCHAR(15) UNIQUE NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    apellido VARCHAR(100),
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE
+);
 
-INSERT INTO usuarios (email, password, nombre, rol) 
-VALUES ('empresa@test.com', 'emp123', 'Eventos S.A.', 'EMPRESA');
+-- Tabla Hija 2: Datos para entes con CUIT (Empresas)
+CREATE TABLE datos_empresas (
+    id_usuario INT PRIMARY KEY,
+    cuit VARCHAR(20) UNIQUE NOT NULL,
+    razon_social VARCHAR(100) NOT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE
+);
 
-INSERT INTO usuarios (email, password, nombre, rol) 
-VALUES ('invitado@test.com', 'inv123', 'Laura Fernandez', 'INVITADO');
+-- INSERTS DE PRUEBA (Copiá y pegá esto también)
+
+-- 1. Insertar Administrador (DNI: 11222333)
+INSERT INTO usuarios (email, password, rol) VALUES ('admin@hotel.com', '1234', 'ADMINISTRADOR');
+INSERT INTO datos_personas (id_usuario, dni, nombre, apellido) VALUES (1, '11222333', 'Martin', 'Waltar');
+
+-- 2. Insertar Empresa (CUIT: 30-12345678-9)
+INSERT INTO usuarios (email, password, rol) VALUES ('info@globant.com', 'empresa123', 'EMPRESA');
+INSERT INTO datos_empresas (id_usuario, cuit, razon_social) VALUES (2, '30-12345678-9', 'Globant S.A.');
+
+-- 3. Insertar Invitado (DNI: 44555666)
+INSERT INTO usuarios (email, password, rol) VALUES ('invitado@gmail.com', 'invitado123', 'INVITADO');
+INSERT INTO datos_personas (id_usuario, dni, nombre, apellido) VALUES (3, '44555666', 'Juan', 'Perez');

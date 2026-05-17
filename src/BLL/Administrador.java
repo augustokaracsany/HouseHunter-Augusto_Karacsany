@@ -1,49 +1,71 @@
 package BLL;
 
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
 public class Administrador extends Persona {
+    private String dni;
+    private String nombreCompleto;
 
-    public Administrador(String email, String password, String nombre, Rol rol) {
-        super(email, password, nombre, rol);
+    public Administrador(String email, String password, String nombreCompleto, String dni, Rol rol) {
+        super(email, password, rol);
+        this.dni = dni;
+        this.nombreCompleto = nombreCompleto;
+    }
+
+    @Override
+    public String getNombre() {
+        return nombreCompleto;
     }
 
     @Override
     public void mostrarMenu() {
-        String[] opciones = {
-            "Check-in de invitado",
-            "Asignar habitacion",
-            "Monitorear actividades",
-            "Visualizar cronograma",
-            "Entregar premio",
-            "Actualizar estado actividad",
-            "Generar reporte de evento",
-            "Cerrar sesion"
+        ImageIcon iconoMenu = new ImageIcon("src/img/HouseHunter_Menu-Administrador.png");
+        
+        String tituloHtml = "<html><body style='width: 300px; text-align: center;'>"
+                          + "<h2>🔑 Panel de Recepción</h2>"
+                          + "<b>Admin:</b> " + getNombre() 
+                          + "<hr>Seleccione un área de gestión:</body></html>";
+
+        String[] modulos = {
+            "🏨 RECEPCIÓN", 
+            "🎮 ACTIVIDADES", 
+            "📊 REPORTES", 
+            "❌ CERRAR SESIÓN"
         };
-        int opcion;
+
+        int seleccion;
         do {
-            opcion = JOptionPane.showOptionDialog(
-                null,
-                "Menu Admin Hotel - " + nombre,
-                "Sistema HousHunter",
-                0,
-                JOptionPane.INFORMATION_MESSAGE,
-                null,
-                opciones,
-                opciones[0]
+            seleccion = JOptionPane.showOptionDialog(
+                null, tituloHtml, "HouseHunter v1.0",
+                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
+                iconoMenu, modulos, modulos[0]
             );
 
-            switch (opcion) {
-                case 0: subMenuCheckIn(); break;
-                case 1: subMenuHabitacion(); break;
-                case 2: mostrarMensaje("Monitorear actividades"); break;
-                case 3: mostrarMensaje("Visualizar cronograma"); break;
-                case 4: subMenuPremio(); break;
-                case 5: mostrarMensaje("Actualizar estado actividad"); break;
-                case 6: mostrarMensaje("Generar reporte de evento"); break;
-                case 7: JOptionPane.showMessageDialog(null, "Sesion cerrada."); break;
+            switch (seleccion) {
+                case 0: subMenuRecepcion(); break; 
+                case 1: subMenuActividades(); break; 
+                case 2: subMenuAdminReportes(); break; 
+                case 3: JOptionPane.showMessageDialog(null, "Sesión cerrada de " + getNombre()); break;
             }
-        } while (opcion != 7 && opcion != -1); // -1 es si cierra la ventana
+        } while (seleccion != 3 && seleccion != -1);
+    }
+
+    private void subMenuRecepcion() {
+        String[] opciones = {"Check-in de invitado", "Asignar habitación", "Volver"};
+        int op = JOptionPane.showOptionDialog(null, "<html><b style='width:250px'>Gestión de Recepción</b></html>", "Recepción", 0, 1, null, opciones, opciones[0]);
+        if(op == 0) subMenuCheckIn();
+        if(op == 1) subMenuHabitacion();
+    }
+
+    private void subMenuActividades() {
+        String[] opciones = {"Monitorear actividades", "Visualizar cronograma", "Actualizar estado", "Entregar premio", "Volver"};
+        int op = JOptionPane.showOptionDialog(null, "<html><b style='width:250px'>Control de Evento</b></html>", "Actividades", 0, 1, null, opciones, opciones[0]);
+        if(op != 4 && op != -1) mostrarMensaje(opciones[op]);
+    }
+
+    private void subMenuAdminReportes() {
+        mostrarMensaje("Generar reporte de evento");
     }
 
     private void subMenuCheckIn() {
@@ -52,36 +74,20 @@ public class Administrador extends Persona {
         do {
             op = (String)JOptionPane.showInputDialog(null, "Check-in", "Submenu", 0, null, sub, sub[0]);
             if(op == null) break;
-            switch (op) {
-                case "Validar invitado autorizado": mostrarMensaje("Validar invitado autorizado"); break;
-                case "Registrar check-in exitoso": mostrarMensaje("Check-in exitoso"); break;
-                case "Volver": break;
-            }
-        } while (!op.equals("Volver"));
+            if(!op.equals("Volver")) mostrarMensaje(op);
+        } while (op != null && !op.equals("Volver"));
     }
 
     private void subMenuHabitacion() {
-        String[] sub = {"Validar disponibilidad", "Asignar habitacion", "Volver"};
-        int op;
-        do {
-            op = JOptionPane.showOptionDialog(null, "Gestion Habitaciones", "Submenu", 0, JOptionPane.INFORMATION_MESSAGE, null, sub, sub[0]);
-            switch (op) {
-                case 0: mostrarMensaje("Validar habitacion"); break;
-                case 1: mostrarMensaje("Asignar habitacion"); break;
-            }
-        } while (op != 2 && op != -1);
+        String[] sub = {"Validar disponibilidad", "Asignar habitación", "Volver"};
+        int op = JOptionPane.showOptionDialog(null, "Gestión Habitaciones", "Submenu", 0, 1, null, sub, sub[0]);
+        if(op != 2 && op != -1) mostrarMensaje(sub[op]);
     }
 
     private void subMenuPremio() {
         String[] sub = {"Obtener un ganador", "Entregar premio", "Volver"};
-        int op;
-        do {
-            op = JOptionPane.showOptionDialog(null, "Entrega de premios", "Submenu", 0, JOptionPane.INFORMATION_MESSAGE, null, sub, sub[0]);
-            switch (op) {
-                case 0: mostrarMensaje("Obtener un ganador"); break;
-                case 1: mostrarMensaje("Entregar premio"); break;
-            }
-        } while (op != 2 && op != -1);
+        int op = JOptionPane.showOptionDialog(null, "Entrega de premios", "Submenu", 0, 1, null, sub, sub[0]);
+        if(op != 2 && op != -1) mostrarMensaje(sub[op]);
     }
 
     private void mostrarMensaje(String accion) {

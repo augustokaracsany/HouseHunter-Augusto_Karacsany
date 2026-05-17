@@ -1,47 +1,66 @@
 package BLL;
 
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
 public class Empresa extends Persona {
+    private String cuit;
+    private String razonSocial;
 
-    public Empresa(String email, String password, String nombre, Rol rol) {
-        super(email, password, nombre, rol);
+    public Empresa(String email, String password, String cuit, String razonSocial, Rol rol) {
+        super(email, password, rol);
+        this.cuit = cuit;
+        this.razonSocial = razonSocial;
+    }
+
+    @Override
+    public String getNombre() {
+        return razonSocial;
     }
 
     @Override
     public void mostrarMenu() {
-        String[] opciones = {
-            "Realizar reserva",
-            "Cargar listado de invitados",
-            "Seleccionar plantilla",
-            "Definir cronograma",
-            "Generar invitaciones masivas",
-            "Consultar reportes",
-            "Cerrar sesión"
+    	ImageIcon iconoMenu = new ImageIcon("src/img/HouseHunter_Menu-Empresa.png");
+        // Texto con ancho fijo para que la ventana no se deforme
+        String tituloMenu = "<html><body style='width: 300px; text-align: center;'>"
+                          + "<h2>🏢 Panel de Empresa</h2>"
+                          + "<b>Entidad:</b> " + getNombre() 
+                          + "<hr>Seleccione un módulo de gestión:</body></html>";
+
+        String[] modulos = {
+            "📁 GESTIÓN DE EVENTO", 
+            "📅 PLANIFICACIÓN", 
+            "📧 INVITACIONES", 
+            "📊 REPORTES", 
+            "❌ CERRAR SESIÓN"
         };
-        int opcion;
+
+        int seleccion;
         do {
-            opcion = JOptionPane.showOptionDialog(
+            seleccion = JOptionPane.showOptionDialog(
                 null,
-                "Menu Empresa - " + nombre,
-                "Sistema HousHunter",
-                0,
-                JOptionPane.INFORMATION_MESSAGE,
-                null,
-                opciones,
-                opciones[0]
+                tituloMenu,
+                "HouseHunter v1.0",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.PLAIN_MESSAGE,
+                iconoMenu, // Aquí podrías poner el logo de HouseHunter si lo cargás como Icon
+                modulos,
+                modulos[0]
             );
 
-            switch (opcion) {
-                case 0: mostrarMensaje("Realizar reserva"); break;
-                case 1: mostrarMensaje("Cargar listado de invitados"); break;
-                case 2: mostrarMensaje("Seleccionar plantilla"); break;
-                case 3: subMenuCronograma(); break;
-                case 4: subMenuInvitaciones(); break;
-                case 5: subMenuReportes(); break;
-                case 6: JOptionPane.showMessageDialog(null, "Sesion cerrada."); break;
+            switch (seleccion) {
+                case 0: subMenuGestionEvento(); break;
+                case 1: subMenuCronograma(); break; // El que ya tenías
+                case 2: subMenuInvitaciones(); break; // El que ya tenías
+                case 3: subMenuReportes(); break;
+                case 4: JOptionPane.showMessageDialog(null, "Cerrando sesión de " + getNombre()); break;
             }
-        } while (opcion != 6 && opcion != -1);
+        } while (seleccion != 4 && seleccion != -1);
+    }
+
+    private void subMenuGestionEvento() {
+        String[] opciones = {"Realizar Reserva", "Cargar Invitados", "Seleccionar Plantilla", "Volver"};
+        JOptionPane.showOptionDialog(null, "<html><b style='width:250px'>Módulo de Eventos</b></html>", "Gestión", 0, 1, null, opciones, opciones[0]);
     }
 
     private void subMenuCronograma() {
