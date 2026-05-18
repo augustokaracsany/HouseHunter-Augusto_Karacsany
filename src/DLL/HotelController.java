@@ -1,4 +1,4 @@
-package controller;
+package DLL;
 
 public class HotelController {
 
