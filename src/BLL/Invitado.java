@@ -53,6 +53,27 @@ public class Invitado extends Persona {
         this.asistenciaConfirmada = asistenciaConfirmada;
     }
 
+    // 2. Constructor completo para nuevos registros (nombre + apellido)
+    public Invitado(String email, String password, String nombre, String apellido, Rol rol) {
+        super(email, password, rol);
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.asistenciaConfirmada = false;
+    }
+
+    // 3. Constructor para recuperar desde BD (sin password)
+    public Invitado(int id, String email, String nombre, String apellido, String dni, String telefono, String tokenAcceso, boolean asistenciaConfirmada) {
+        super(email, "", Rol.INVITADO);
+        this.id = id;
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.dni = dni;
+        this.telefono = telefono;
+        this.tokenAcceso = tokenAcceso;
+        this.asistenciaConfirmada = asistenciaConfirmada;
+    }
+
+    // ========== MÉTODOS ==========
     @Override
     public String getNombre() {
         return nombre + (apellido != null && !apellido.isEmpty() ? " " + apellido : "");
