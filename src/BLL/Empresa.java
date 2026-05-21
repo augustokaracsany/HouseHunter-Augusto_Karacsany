@@ -16,13 +16,12 @@ public class Empresa extends Persona {
     private String cuit;
     private String razonSocial;
 
-    // Controladores
+ // Controladores
     private EventoController eventoController = new EventoController();
     private InvitadoController invitadoController = new InvitadoController();
     private ReporteController reporteController = new ReporteController();
-    private HotelController hotelController = new HotelController(); // opcional si usas habitaciones
-
-    // Reserva actual (la que se está gestionando)
+    private HotelController hotelController = HotelController.getInstance(); // FIX Singleton -> Augusto.
+    // Reserva actual ( La que se está gestionando. )
     private Reserva reservaActual;
 
     public Empresa(String email, String password, String cuit, String razonSocial, Rol rol) {
