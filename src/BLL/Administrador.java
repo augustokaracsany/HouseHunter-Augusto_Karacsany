@@ -1,6 +1,9 @@
 package BLL;
 
-import DLL.HotelController;
+import DLL.ActividadController;
+import DLL.EventoController;
+import DLL.HabitacionController;
+import DLL.PremioController;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
@@ -70,11 +73,11 @@ public class Administrador extends Persona {
         if (op == 0) { // 🏨 Registrar Check-In
             ejecutarFlujoCheckInCompleto();
             
-        } else if (op == 1) { // 🔍 Monitorear Habitaciones (¡CORREGIDO!)
-            // Llamamos al nuevo método HTML del controlador
-            String estadoHabitacionesHtml = HotelController.getInstance().obtenerEstadoHabitacionesHtml(); 
+        } else if (op == 1) { // 🔍 Monitorear Habitaciones
+            // Cambiado al controlador específico de habitaciones
+            String estadoHabitacionesHtml = HabitacionController.getInstance().obtenerEstadoHabitacionesHtml(); 
             
-            // Lo mostramos usando el banner verde estético de RECEPCIÓN
+         // Lo mostramos usando el banner verde estético de RECEPCIÓN
             JOptionPane.showMessageDialog(
                 null, 
                 estadoHabitacionesHtml, 
@@ -95,37 +98,40 @@ public class Administrador extends Persona {
             iconoActividades, opciones, opciones[0]
         );
         
-        // Agrupamos el caso 0 y 2 para ofrecer una experiencia fluida de monitoreo y carga de datos
+     // Agrupamos el caso 0 y 2 para ofrecer una experiencia fluida de monitoreo y carga de datos
         if (op == 0 || op == 2) { 
             String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Control de Asistencias", JOptionPane.QUESTION_MESSAGE);
             if (codEvento == null || codEvento.trim().isEmpty()) return;
-
+            
             // Busco las actividades de este evento en la BD para armar el combo de selección
-            String[] actividades = HotelController.getInstance().obtenerNombresActividades(codEvento.trim());
+            // Usa limpiamente tu patrón Singleton nativo
+            String[] actividades = ActividadController.getInstance().obtenerNombresActividades(codEvento.trim());
             
             if (actividades.length == 0) {
                 JOptionPane.showMessageDialog(null, "❌ No hay actividades cargadas o el evento no existe.", "Aviso", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-
-            // El administrador elige de forma segura qué actividad quiere monitorear/actualizar
+            
+         // El administrador elige de forma segura qué actividad quiere monitorear/actualizar
             String actividadSeleccionada = (String) JOptionPane.showInputDialog(
                 null, "Seleccione la actividad a gestionar:", "Monitoreo de Bloques",
                 JOptionPane.PLAIN_MESSAGE, iconoActividades, actividades, actividades[0]
             );
-
+            
+         // Impactamos la base de datos de forma directa mediante el controlador
             if (actividadSeleccionada != null) {
                 String dniInvitado = JOptionPane.showInputDialog(null, "Ingrese el DNI del Invitado que asistió:", "Tomar Asistencia", JOptionPane.QUESTION_MESSAGE);
                 if (dniInvitado != null && !dniInvitado.trim().isEmpty()) {
-                    // Impactamos la base de datos de forma directa mediante el controlador
-                    HotelController.getInstance().registrarAsistenciaActividad(codEvento.trim(), actividadSeleccionada, dniInvitado.trim());
+                    // Sincronizado mediante Singleton
+                    ActividadController.getInstance().registrarAsistenciaActividad(codEvento.trim(), actividadSeleccionada, dniInvitado.trim());
                 }
             }
             
         } else if (op == 1) { // 📊 Visualizar cronograma
             String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Consultar Cronograma", JOptionPane.QUESTION_MESSAGE);
             if (codEvento != null && !codEvento.trim().isEmpty()) {
-                String agendaHtml = HotelController.getInstance().obtenerCronogramaEventos(codEvento.trim());
+                // Sincronizado mediante Singleton
+                String agendaHtml = ActividadController.getInstance().obtenerCronogramaEventos(codEvento.trim());
                 JOptionPane.showMessageDialog(null, agendaHtml, "Agenda - Evento: " + codEvento.trim(), JOptionPane.PLAIN_MESSAGE, iconoActividades);
             }
         } else if (op == 3) {
@@ -146,8 +152,8 @@ public class Administrador extends Persona {
         if (op == 0) { // 📊 Generar reporte de evento
             String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento para consolidar:", "Generar Reporte", JOptionPane.QUESTION_MESSAGE);
             if (codEvento != null && !codEvento.trim().isEmpty()) {
-                // Invocamos al controlador para traer la sábana de datos procesada
-                String reporteHtml = HotelController.getInstance().obtenerReporteConsolidadoEvento(codEvento.trim());
+                // Cambiado a EventoController (Analítica cross-table)
+                String reporteHtml = EventoController.getInstance().obtenerReporteConsolidadoEvento(codEvento.trim());
                 JOptionPane.showMessageDialog(null, reporteHtml, "Métricas del Evento: " + codEvento.trim(), JOptionPane.PLAIN_MESSAGE, iconoReportes);
             }
         }
@@ -171,7 +177,8 @@ public class Administrador extends Persona {
                     String dniInvitado = JOptionPane.showInputDialog(null, "Ingrese el DNI del Invitado:", "Validación Previa", JOptionPane.QUESTION_MESSAGE);
                     if (dniInvitado != null && !dniInvitado.trim().isEmpty()) {
                         
-                        boolean autorizado = HotelController.getInstance().validarInvitadoPrevia(codEvento.trim(), dniInvitado.trim());
+                        // Cambiado a EventoController para chequear listas previas
+                        boolean autorizado = EventoController.getInstance().validarInvitadoPrevia(codEvento.trim(), dniInvitado.trim());
                         if (autorizado) {
                             JOptionPane.showMessageDialog(null, "✅ El invitado con DNI " + dniInvitado + " se encuentra AUTORIZADO en la lista previa.", "Verificación Exitosa", JOptionPane.INFORMATION_MESSAGE);
                         } else {
@@ -197,7 +204,6 @@ public class Administrador extends Persona {
         );
         
         if (op == 0) {
-            // Reutilizamos el mensaje informativo indicando que la disponibilidad se procesa al ingresar al check-in incremental
             JOptionPane.showMessageDialog(null, "Para validar disponibilidad en tiempo real o modificar estados,\nutilice la opción 'Registrar check-in exitoso' del menú anterior.", "Control de Habitaciones", JOptionPane.INFORMATION_MESSAGE);
         } else if (op == 1) {
             ejecutarFlujoCheckInCompleto();
@@ -214,29 +220,29 @@ public class Administrador extends Persona {
         String numHabitacion = JOptionPane.showInputDialog(null, "Ingrese el Número de Habitación (Ej: 101, 102, 201):", "Procesar Asignación", JOptionPane.QUESTION_MESSAGE);
         if (numHabitacion == null || numHabitacion.trim().isEmpty()) return;
 
-        // Llamada directa al método transaccional del controlador que maneja la persistencia y estados incrementales
-        HotelController.getInstance().procesarCheckInHabitacion(codEvento.trim(), dniInvitado.trim(), numHabitacion.trim());
+        // Cambiado al controlador específico de habitaciones transaccionales
+        HabitacionController.getInstance().procesarCheckInHabitacion(codEvento.trim(), dniInvitado.trim(), numHabitacion.trim());
     }
 
     private void subMenuPremio() {
         ImageIcon iconoActividades = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Actividades.png");
-        String[] sub = {"Lanzar Sorteo de Evento", "Volver"}; // Unificamos el flujo de forma óptima
+        String[] sub = {"Lanzar Sorteo de Evento", "Volver"}; 
         
-        int op = JOptionPane.showOptionDialog(
+        int op = JOptionPane.showOptionDialog( 
             null, "<html><body style='width:250px; text-align:center;'><h3>Entrega de Premios</h3>Seleccione una operación:</body></html>", 
             "Submenú Premios", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
             iconoActividades, sub, sub[0]
         );
         
-        if (op == 0) { // 🎁 Lanzar Sorteo de Evento
+        if (op == 0) {  // Lanzar Sorteo de Evento
             String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Configurar Sorteo", JOptionPane.QUESTION_MESSAGE);
             if (codEvento == null || codEvento.trim().isEmpty()) return;
             
             String descripcionPremio = JOptionPane.showInputDialog(null, "Ingrese la descripción del Premio (Ej: Voucher Estadía 5 Estrellas):", "Detalle del Premio", JOptionPane.QUESTION_MESSAGE);
             if (descripcionPremio == null || descripcionPremio.trim().isEmpty()) return;
             
-            // Ejecutamos de forma directa el flujo automatizado de elegibilidad y entrega
-            HotelController.getInstance().ejecutarSorteoPremio(codEvento.trim(), descripcionPremio.trim());
+            // Cambiado a PremioController
+            PremioController.getInstance().ejecutarSorteoPremio(codEvento.trim(), descripcionPremio.trim());
         }
     }
 

@@ -44,7 +44,7 @@ public class PremioController {
             }
 
             if (idUsuarioGanador == 0) {
-                JOptionPane.showMessageDialog(null, "❌ No hay invitados con asistencias registradas.", "Sorteo Vacío", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null, "❌ No hay asistentes confirmados para este sorteo.", "Sorteo Vacío", JOptionPane.WARNING_MESSAGE);
                 return false;
             }
 
