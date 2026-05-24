@@ -21,13 +21,17 @@ public class Invitado extends Persona {
     private Reserva reserva;      // Reserva asociada al invitado
     private Habitacion habitacion;
 
-    // Controladores
-    private transient InvitadoController invitadoController = new InvitadoController();
-    private transient EventoController eventoController = new EventoController();
-    private transient PremioController premioController = new PremioController();
+    // Controladores (Se corrigió PremioController a su patrón Singleton)
+    private transient InvitadoController invitadoController = InvitadoController.getInstance();
+    private transient EventoController eventoController = EventoController.getInstance();
+    private transient PremioController premioController = PremioController.getInstance(); 
     private transient ReporteController reporteController = new ReporteController();
 
-    // Constructores (ya los tenías, los mantengo)
+    // =========================================================================
+    // CONSTRUCTORES LIMPIOS (Sin duplicados)
+    // =========================================================================
+
+    // 1. Constructor básico (Email, Password, Nombre, Rol)
     public Invitado(String email, String password, String nombre, Rol rol) {
         super(email, password, rol);
         this.nombre = nombre;
@@ -35,6 +39,7 @@ public class Invitado extends Persona {
         this.asistenciaConfirmada = false;
     }
 
+    // 2. Constructor completo para nuevos registros (Email, Password, Nombre, Apellido, Rol)
     public Invitado(String email, String password, String nombre, String apellido, Rol rol) {
         super(email, password, rol);
         this.nombre = nombre;
@@ -42,26 +47,7 @@ public class Invitado extends Persona {
         this.asistenciaConfirmada = false;
     }
 
-    public Invitado(int id, String email, String nombre, String apellido, String dni, String telefono, String tokenAcceso, boolean asistenciaConfirmada) {
-        super(email, "", Rol.INVITADO);
-        this.id = id;
-        this.nombre = nombre;
-        this.apellido = apellido;
-        this.dni = dni;
-        this.telefono = telefono;
-        this.tokenAcceso = tokenAcceso;
-        this.asistenciaConfirmada = asistenciaConfirmada;
-    }
-
-    // 2. Constructor completo para nuevos registros (nombre + apellido)
-    public Invitado(String email, String password, String nombre, String apellido, Rol rol) {
-        super(email, password, rol);
-        this.nombre = nombre;
-        this.apellido = apellido;
-        this.asistenciaConfirmada = false;
-    }
-
-    // 3. Constructor para recuperar desde BD (sin password)
+    // 3. Constructor para recuperar desde BD (Con ID, datos personales y asistencia)
     public Invitado(int id, String email, String nombre, String apellido, String dni, String telefono, String tokenAcceso, boolean asistenciaConfirmada) {
         super(email, "", Rol.INVITADO);
         this.id = id;
@@ -91,7 +77,7 @@ public class Invitado extends Persona {
                 JOptionPane.showMessageDialog(null, "Acceso denegado. No se proporcionó token.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            Invitado invitadoValidado = new InvitadoController().validarToken(token.trim());
+            Invitado invitadoValidado = InvitadoController.getInstance().validarToken(token.trim());
             if (invitadoValidado == null) {
                 JOptionPane.showMessageDialog(null, "Token inválido o expirado. No puede acceder al sistema.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -103,7 +89,7 @@ public class Invitado extends Persona {
             JOptionPane.showMessageDialog(null, "✅ Acceso concedido. Bienvenido al evento: " + reserva.getFechaEvento());
         }
 
-        // Menú principal (igual que antes, pero con los métodos ya implementados)
+        // Menú principal
         ImageIcon iconoInvitado = new ImageIcon("src/img/HouseHunter_Menu-Invitado.png");
         String tituloHtml = "<html><body style='width: 350px; text-align: center;'>"
                           + "<h2>🎟️ Panel del Invitado</h2>"
@@ -155,12 +141,12 @@ public class Invitado extends Persona {
         StringBuilder sb = new StringBuilder("📅 CRONOGRAMA DEL EVENTO\n\n");
         for (Actividad a : actividades) {
             sb.append("🔹 ").append(a.getNombre())
-              .append("\n   📅 Fecha: ").append(a.getFechaHora().toLocalDate())
+              .append("\n    📅 Fecha: ").append(a.getFechaHora().toLocalDate())
               .append(" ⏰ Hora: ").append(a.getFechaHora().toLocalTime())
-              .append("\n   ⏱️ Duración: ").append(a.getDuracionMinutos()).append(" min")
-              .append("\n   🎯 Categoría: ").append(a.getCategoria())
-              .append("\n   ⭐ Importancia: ").append(a.getImportancia())
-              .append("\n   👥 Cupo máx.: ").append(a.getCupoMaximo())
+              .append("\n    ⏱️ Duración: ").append(a.getDuracionMinutos()).append(" min")
+              .append("\n    🎯 Categoría: ").append(a.getCategoria())
+              .append("\n    ⭐ Importancia: ").append(a.getImportancia())
+              .append("\n    👥 Cupo máx.: ").append(a.getCupoMaximo())
               .append("\n\n");
         }
         JOptionPane.showMessageDialog(null, sb.toString(), "Cronograma - CU24", JOptionPane.PLAIN_MESSAGE);
@@ -198,8 +184,6 @@ public class Invitado extends Persona {
         JOptionPane.showOptionDialog(null, "Seleccione una actividad para ver más detalles (CU27):", 
                 "Lista de actividades - CU26", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
                 null, nombres, nombres[0]);
-        // Nota: la selección en sí no hace nada aquí, solo muestra la lista.
-        // Para detalle usamos el siguiente método (CU27).
     }
 
     // CU27: Ver detalles actividad (seleccionando una)
@@ -300,7 +284,7 @@ public class Invitado extends Persona {
                 "Error", JOptionPane.ERROR_MESSAGE);
     }
 
-    // ======================== GETTERS Y SETTERS (adicionales) ========================
+    // ======================== GETTERS Y SETTERS ========================
     public String getApellido() { return apellido; }
     public void setApellido(String apellido) { this.apellido = apellido; }
     public String getDni() { return dni; }

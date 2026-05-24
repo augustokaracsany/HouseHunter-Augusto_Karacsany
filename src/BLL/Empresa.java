@@ -18,7 +18,7 @@ public class Empresa extends Persona {
 
  // Controladores activos de forma unificada
     private EventoController eventoController = EventoController.getInstance();
-    private InvitadoController invitadoController = new InvitadoController();
+    private InvitadoController invitadoController = InvitadoController.getInstance();
     private ReporteController reporteController = new ReporteController();
     private ActividadController actividadController = ActividadController.getInstance(); // ¡CORREGIDO al Singleton real!
     // Reserva actual ( La que se está gestionando. )
