@@ -76,17 +76,41 @@ public class Administrador extends Persona {
             iconoActividades, opciones, opciones[0]
         );
         
-        if (op == 1) { // 📊 Visualizar cronograma
-            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento para ver la agenda:", "Consultar Cronograma", JOptionPane.QUESTION_MESSAGE);
+        // Agrupamos el caso 0 y 2 para ofrecer una experiencia fluida de monitoreo y carga de datos
+        if (op == 0 || op == 2) { 
+            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Control de Asistencias", JOptionPane.QUESTION_MESSAGE);
+            if (codEvento == null || codEvento.trim().isEmpty()) return;
+
+            // Busco las actividades de este evento en la BD para armar el combo de selección
+            String[] actividades = HotelController.getInstance().obtenerNombresActividades(codEvento.trim());
+            
+            if (actividades.length == 0) {
+                JOptionPane.showMessageDialog(null, "❌ No hay actividades cargadas o el evento no existe.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // El administrador elige de forma segura qué actividad quiere monitorear/actualizar
+            String actividadSeleccionada = (String) JOptionPane.showInputDialog(
+                null, "Seleccione la actividad a gestionar:", "Monitoreo de Bloques",
+                JOptionPane.PLAIN_MESSAGE, iconoActividades, actividades, actividades[0]
+            );
+
+            if (actividadSeleccionada != null) {
+                String dniInvitado = JOptionPane.showInputDialog(null, "Ingrese el DNI del Invitado que asistió:", "Tomar Asistencia", JOptionPane.QUESTION_MESSAGE);
+                if (dniInvitado != null && !dniInvitado.trim().isEmpty()) {
+                    // Impactamos la base de datos de forma directa mediante el controlador
+                    HotelController.getInstance().registrarAsistenciaActividad(codEvento.trim(), actividadSeleccionada, dniInvitado.trim());
+                }
+            }
+            
+        } else if (op == 1) { // 📊 Visualizar cronograma
+            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Consultar Cronograma", JOptionPane.QUESTION_MESSAGE);
             if (codEvento != null && !codEvento.trim().isEmpty()) {
-                // Llamamos al controlador para renderizar el HTML dinámico de la BD
-                String HTMLResult = HotelController.getInstance().obtenerCronogramaEventos(codEvento.trim());
-                JOptionPane.showMessageDialog(null, HTMLResult, "Agenda del Evento: " + codEvento.trim(), JOptionPane.PLAIN_MESSAGE, iconoActividades);
+                String agendaHtml = HotelController.getInstance().obtenerCronogramaEventos(codEvento.trim());
+                JOptionPane.showMessageDialog(null, agendaHtml, "Agenda - Evento: " + codEvento.trim(), JOptionPane.PLAIN_MESSAGE, iconoActividades);
             }
         } else if (op == 3) {
             subMenuPremio();
-        } else if (op != 4 && op != -1) {
-            mostrarMensaje(opciones[op]);
         }
     }
 

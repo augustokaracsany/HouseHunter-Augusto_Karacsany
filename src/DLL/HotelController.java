@@ -139,8 +139,6 @@ public class HotelController {
     public String obtenerCronogramaEventos(String codigoEvento) {
         StringBuilder cronograma = new StringBuilder();
         
-        // Armo la query cruzando las actividades con la reserva mediante un INNER JOIN 
-        // usando el código único del evento corporativo, y lo ordeno cronológicamente.
         String sql = "SELECT a.nombre, a.descripcion, a.importancia, a.categoria, a.hora_actividad " +
                      "FROM actividades a " +
                      "JOIN reservas_hotel rh ON a.id_reserva = rh.id " +
@@ -153,25 +151,21 @@ public class HotelController {
             ps.setString(1, codigoEvento);
 
             try (ResultSet rs = ps.executeQuery()) {
-                // Inicio el armado de la estructura del documento HTML para que JOptionPane lo renderice estéticamente.
                 cronograma.append("<html><body style='width: 320px;'>");
                 cronograma.append("<h2 style='text-align: center; color: #1a5f7a;'>📅 Cronograma de Actividades</h2>");
                 cronograma.append("<p style='text-align: center;'><b>Evento:</b> ").append(codigoEvento).append("</p><hr>");
 
                 boolean tieneActividades = false;
                 
-                // Recorro los registros devueltos por la base de datos fila por fila.
                 while (rs.next()) {
                     tieneActividades = true;
                     
-                    // Recorto los segundos de la hora para quedarme sólo con el formato HH:mm.
                     String hora = rs.getTime("hora_actividad").toString().substring(0, 5);
                     String nombre = rs.getString("nombre");
                     String desc = rs.getString("descripcion");
                     String importancia = rs.getString("importancia");
                     String categoria = rs.getString("categoria");
 
-                    // Defino un color dinámico para la etiqueta según el nivel de criticidad o importancia.
                     String colorImportancia = "gray";
                     if (importancia.equalsIgnoreCase("Alta")) {
                         colorImportancia = "red";
@@ -179,7 +173,6 @@ public class HotelController {
                         colorImportancia = "orange";
                     }
 
-                    // Inyecto los datos de la actividad actual en las etiquetas HTML correspondientes.
                     cronograma.append("<p style='margin-bottom: 2px;'><b>⏱️ ").append(hora).append(" hs</b> - ").append(nombre).append("</p>");
                     cronograma.append("<p style='margin-left: 15px; color: #555; margin-top: 0px;'><i>").append(desc != null ? desc : "Sin descripción").append("</i><br>");
                     cronograma.append("<small>📁 Cat: ").append(categoria)
@@ -189,7 +182,6 @@ public class HotelController {
 
                 cronograma.append("</body></html>");
 
-                // Valido si el evento no existe o simplemente carece de itinerario asignado en la BD.
                 if (!tieneActividades) {
                     return "<html><body>❌ No se encontraron actividades registradas para el código de evento ingresado.</body></html>";
                 }
@@ -197,9 +189,82 @@ public class HotelController {
                 return cronograma.toString();
             }
         } catch (SQLException e) {
-            // Registro el error de SQL de manera interna y devuelvo un aviso genérico pero seguro para la interfaz.
             System.err.println("Error al obtener el cronograma: " + e.getMessage());
             return "<html><body>❌ Error técnico al consultar la base de datos.</body></html>";
+        }
+    }
+
+    // Traigo un listado plano de nombres de actividades vinculadas al evento.
+    public String[] obtenerNombresActividades(String codigoEvento) {
+        java.util.List<String> lista = new java.util.ArrayList<>();
+        String sql = "SELECT a.nombre FROM actividades a " +
+                     "JOIN reservas_hotel rh ON a.id_reserva = rh.id " +
+                     "WHERE rh.codigo_unico_evento = ?";
+        
+        Connection con = ConexionController.getInstance().getConnection();
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, codigoEvento);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lista.add(rs.getString("nombre"));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al obtener nombres de actividades: " + e.getMessage());
+        }
+        
+        return lista.toArray(new String[0]);
+    }
+
+    // Asiento de forma segura la asistencia de un invitado validando relaciones de la base de datos.
+    public boolean registrarAsistenciaActividad(String codigoEvento, String nombreActividad, String dniInvitado) {
+        Connection con = ConexionController.getInstance().getConnection();
+        
+        String sqlIds = "SELECT a.id AS id_act_real, lip.id AS id_inv_real " +
+                        "FROM reservas_hotel rh " +
+                        "JOIN actividades a ON a.id_reserva = rh.id " +
+                        "JOIN lista_invitados_previa lip ON lip.id_reserva = rh.id " +
+                        "WHERE rh.codigo_unico_evento = ? AND a.nombre = ? AND lip.dni = ?";
+        
+        String sqlInsertAsistencia = "INSERT INTO asistencias_actividades (id_actividad, id_invitado, asistio) " +
+                                     "VALUES (?, ?, 'S') " +
+                                     "ON DUPLICATE KEY UPDATE asistio = 'S'";
+
+        try {
+            int idActividad = 0;
+            int idInvitado = 0;
+
+            try (PreparedStatement ps = con.prepareStatement(sqlIds)) {
+                ps.setString(1, codigoEvento);
+                ps.setString(2, nombreActividad);
+                ps.setString(3, dniInvitado);
+                
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        idActividad = rs.getInt("id_act_real");
+                        idInvitado = rs.getInt("id_inv_real");
+                    }
+                }
+            }
+
+            if (idActividad == 0 || idInvitado == 0) {
+                JOptionPane.showMessageDialog(null, "❌ El DNI no corresponde a un invitado autorizado para este evento.", "Validación Fallida", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+
+            try (PreparedStatement ps = con.prepareStatement(sqlInsertAsistencia)) {
+                ps.setInt(1, idActividad);
+                ps.setInt(2, idInvitado);
+                ps.executeUpdate();
+            }
+
+            JOptionPane.showMessageDialog(null, "✅ Asistencia registrada con éxito para el invitado DNI: " + dniInvitado + "\nen la actividad: " + nombreActividad, "Estado Actualizado", JOptionPane.INFORMATION_MESSAGE);
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("Error al registrar asistencia en la BD: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "❌ Error técnico al asentar la asistencia.", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
         }
     }
 }
