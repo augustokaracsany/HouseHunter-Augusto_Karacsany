@@ -1,5 +1,6 @@
 package DLL;
 
+import BLL.Habitacion;
 import BLL.Invitado;
 import BLL.Reserva;
 import Repository.Hashing;
@@ -105,4 +106,59 @@ public class InvitadoController {
         }
         return lista;
     }
+    public Invitado validarToken(String token) {
+        String sql = "SELECT i.*, r.id as id_reserva, r.fecha_evento FROM invitados i " +
+                     "JOIN reservas r ON i.id_reserva = r.id WHERE i.token_acceso = ?";
+        try (Connection con = ConexionController.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, token);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                Invitado inv = new Invitado(
+                    rs.getInt("id"), rs.getString("email"), rs.getString("nombre"),
+                    "", rs.getString("dni"), rs.getString("telefono"),
+                    rs.getString("token_acceso"), rs.getBoolean("asistencia_confirmada")
+                );
+                Reserva r = new Reserva();
+                r.setId(rs.getInt("id_reserva"));
+                r.setFechaEvento(rs.getDate("fecha_evento").toLocalDate());
+                inv.setReserva(r);
+                return inv;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Confirmar asistencia (CU25)
+    public boolean confirmarAsistencia(int idInvitado) {
+        String sql = "UPDATE invitados SET asistencia_confirmada = TRUE, fecha_confirmacion = NOW() WHERE id = ?";
+        try (Connection con = ConexionController.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idInvitado);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) { e.printStackTrace(); }
+        return false;
+    }
+
+    // Obtener habitación asignada (CU28)
+    public Habitacion obtenerHabitacionInvitado(int idInvitado) {
+        String sql = "SELECT h.* FROM habitaciones h JOIN invitados i ON i.id_habitacion = h.id WHERE i.id = ?";
+        try (Connection con = ConexionController.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idInvitado);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                Habitacion hab = new Habitacion();
+                hab.setId(rs.getInt("id"));
+                hab.setNumero(rs.getString("numero"));
+                hab.setTipo(rs.getString("tipo"));
+                hab.setCapacidad(rs.getInt("capacidad"));
+                return hab;
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return null;
+    }
+    
 }
