@@ -191,14 +191,24 @@ public class Administrador extends Persona {
 
     private void subMenuPremio() {
         ImageIcon iconoActividades = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Actividades.png");
-        String[] sub = {"Obtener un ganador", "Entregar premio", "Volver"};
+        String[] sub = {"Lanzar Sorteo de Evento", "Volver"}; // Unificamos el flujo de forma óptima
         
         int op = JOptionPane.showOptionDialog(
-            null, "<html><body style='width:250px; text-align:center;'><h3>Entrega de Premios</h3></body></html>", 
+            null, "<html><body style='width:250px; text-align:center;'><h3>Entrega de Premios</h3>Seleccione una operación:</body></html>", 
             "Submenú Premios", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
             iconoActividades, sub, sub[0]
         );
-        if(op != 2 && op != -1) mostrarMensaje(sub[op]);
+        
+        if (op == 0) { // 🎁 Lanzar Sorteo de Evento
+            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Configurar Sorteo", JOptionPane.QUESTION_MESSAGE);
+            if (codEvento == null || codEvento.trim().isEmpty()) return;
+            
+            String descripcionPremio = JOptionPane.showInputDialog(null, "Ingrese la descripción del Premio (Ej: Voucher Estadía 5 Estrellas):", "Detalle del Premio", JOptionPane.QUESTION_MESSAGE);
+            if (descripcionPremio == null || descripcionPremio.trim().isEmpty()) return;
+            
+            // Ejecutamos de forma directa el flujo automatizado de elegibilidad y entrega
+            HotelController.getInstance().ejecutarSorteoPremio(codEvento.trim(), descripcionPremio.trim());
+        }
     }
 
     private void mostrarMensaje(String accion) {

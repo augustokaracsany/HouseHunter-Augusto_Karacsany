@@ -267,4 +267,69 @@ public class HotelController {
             return false;
         }
     }
+     // Realiza un sorteo aleatorio entre los asistentes confirmados de un evento
+    // e impacta la tabla de premios (Mapea CU41 y CU42).
+    public boolean ejecutarSorteoPremio(String codigoEvento, String descripcionPremio) {
+        Connection con = ConexionController.getInstance().getConnection();
+        
+        // Query con ORDER BY RAND() para seleccionar un único ganador al azar que haya asistido ('S')
+        String sqlSorteo = "SELECT lip.id AS id_invitado_real, dp.nombre_completo, lip.dni " +
+                           "FROM asistencias_actividades aa " +
+                           "JOIN lista_invitados_previa lip ON aa.id_invitado = lip.id " +
+                           "JOIN datos_personas dp ON lip.dni = dp.dni " +
+                           "JOIN reservas_hotel rh ON lip.id_reserva = rh.id " +
+                           "WHERE rh.codigo_unico_evento = ? AND aa.asistio = 'S' " +
+                           "ORDER BY RAND() " +
+                           "LIMIT 1";
+        
+        String sqlInsertPremio = "INSERT INTO premios (id_invitado, descripcion, estado) VALUES (?, ?, 'Entregado')";
+
+        try {
+            int idInvitadoGanador = 0;
+            String nombreGanador = "";
+            String dniGanador = "";
+
+            // Ejecutamos la selección aleatoria (Verificar elegibilidad - CU41)
+            try (PreparedStatement ps = con.prepareStatement(sqlSorteo)) {
+                ps.setString(1, codigoEvento);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        idInvitadoGanador = rs.getInt("id_invitado_real");
+                        nombreGanador = rs.getString("nombre_completo");
+                        dniGanador = rs.getString("dni");
+                    }
+                }
+            }
+
+            // Si nadie asistió a ninguna actividad o el código está mal, salimos
+            if (idInvitadoGanador == 0) {
+                JOptionPane.showMessageDialog(null, "❌ No se encontraron invitados con asistencias registradas para este evento.", "Sorteo Vacío", JOptionPane.WARNING_MESSAGE);
+                return false;
+            }
+
+            // Insertamos el premio asignado en la base de datos (Entregar premio - CU42)
+            try (PreparedStatement ps = con.prepareStatement(sqlInsertPremio)) {
+                ps.setInt(1, idInvitadoGanador);
+                ps.setString(2, descripcionPremio);
+                ps.executeUpdate();
+            }
+
+            // Mostramos el ganador con bombos y platillos en la pantalla
+            String mensajeExito = "<html><body style='width: 250px; text-align: center;'>"
+                                + "<h2 style='color: #2ecc71;'>🎉 ¡Tenemos Ganador! 🎉</h2>"
+                                + "<p><b>Invitado:</b> " + nombreGanador + "</p>"
+                                + "<p><b>DNI:</b> " + dniGanador + "</p>"
+                                + "<hr>"
+                                + "<p><b>Premio otorgado:</b><br><i style='color: #555;'>" + descripcionPremio + "</i></p>"
+                                + "</body></html>";
+            
+            JOptionPane.showMessageDialog(null, mensajeExito, "Sorteo Exitoso", JOptionPane.INFORMATION_MESSAGE);
+            return true;
+
+        } catch (SQLException e) {
+            System.err.println("Error en la ejecución del sorteo: " + e.getMessage());
+            JOptionPane.showMessageDialog(null, "❌ Error técnico al procesar el sorteo en la BD.", "Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+    }
 }
