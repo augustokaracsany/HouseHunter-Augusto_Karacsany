@@ -79,7 +79,7 @@ public class InvitadoController {
         return true;
     }
 
-    // Obtener invitados de una reserva
+    // Obtener invitados de una reserva.
     public List<Invitado> listarInvitadosPorReserva(int idReserva) {
         List<Invitado> lista = new ArrayList<>();
         String sql = "SELECT id, nombre, email, telefono, dni, token_acceso, asistencia_confirmada FROM invitados WHERE id_reserva = ?";
@@ -92,7 +92,7 @@ public class InvitadoController {
                         rs.getInt("id"),
                         rs.getString("email"),
                         rs.getString("nombre"),
-                        "", // apellido no está en tabla invitados, lo dejamos vacío
+                        "", // El apellido no está en tabla invitados, lo dejamos vacío.
                         rs.getString("dni"),
                         rs.getString("telefono"),
                         rs.getString("token_acceso"),

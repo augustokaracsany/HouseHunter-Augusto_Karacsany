@@ -1,5 +1,6 @@
 package BLL;
 
+import DLL.HotelController;
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
@@ -101,21 +102,60 @@ public class Administrador extends Persona {
                 null, "Seleccione la operación de check-in:", "Submenú Check-in", 
                 JOptionPane.PLAIN_MESSAGE, iconoRecepcion, sub, sub[0]
             );
-            if(op == null) break;
-            if(!op.equals("Volver")) mostrarMensaje(op);
+            
+            if(op == null || op.equals("Volver")) break;
+            
+            if(op.equals("Validar invitado autorizado")) {
+                String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Validación Previa", JOptionPane.QUESTION_MESSAGE);
+                if (codEvento != null && !codEvento.trim().isEmpty()) {
+                    String dniInvitado = JOptionPane.showInputDialog(null, "Ingrese el DNI del Invitado:", "Validación Previa", JOptionPane.QUESTION_MESSAGE);
+                    if (dniInvitado != null && !dniInvitado.trim().isEmpty()) {
+                        
+                        boolean autorizado = HotelController.getInstance().validarInvitadoPrevia(codEvento.trim(), dniInvitado.trim());
+                        if (autorizado) {
+                            JOptionPane.showMessageDialog(null, "✅ El invitado con DNI " + dniInvitado + " se encuentra AUTORIZADO en la lista previa.", "Verificación Exitosa", JOptionPane.INFORMATION_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(null, "❌ El invitado NO figura en la lista previa de este evento o el código es incorrecto.", "Verificación Fallida", JOptionPane.ERROR_MESSAGE);
+                        }
+                    }
+                }
+            } else if(op.equals("Registrar check-in exitoso")) {
+                ejecutarFlujoCheckInCompleto();
+            }
+            
         } while (!op.equals("Volver"));
     }
 
     private void subMenuHabitacion() {
         ImageIcon iconoRecepcion = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Recepcion.png");
-        String[] sub = {"Validar disponibilidad", "Asignar habitación", "Volver"};
+        String[] sub = {"Validar disponibilidad (Ver Estado)", "Asignar habitación directa", "Volver"};
         
         int op = JOptionPane.showOptionDialog(
             null, "<html><body style='width:250px; text-align:center;'><h3>Gestión Habitaciones</h3></body></html>", 
             "Submenú Habitaciones", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
             iconoRecepcion, sub, sub[0]
         );
-        if(op != 2 && op != -1) mostrarMensaje(sub[op]);
+        
+        if (op == 0) {
+            // Reutilizamos el mensaje informativo indicando que la disponibilidad se procesa al ingresar al check-in incremental
+            JOptionPane.showMessageDialog(null, "Para validar disponibilidad en tiempo real o modificar estados,\nutilice la opción 'Registrar check-in exitoso' del menú anterior.", "Control de Habitaciones", JOptionPane.INFORMATION_MESSAGE);
+        } else if (op == 1) {
+            ejecutarFlujoCheckInCompleto();
+        }
+    }
+
+    private void ejecutarFlujoCheckInCompleto() {
+        String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Procesar Asignación", JOptionPane.QUESTION_MESSAGE);
+        if (codEvento == null || codEvento.trim().isEmpty()) return;
+
+        String dniInvitado = JOptionPane.showInputDialog(null, "Ingrese el DNI del Huésped:", "Procesar Asignación", JOptionPane.QUESTION_MESSAGE);
+        if (dniInvitado == null || dniInvitado.trim().isEmpty()) return;
+
+        String numHabitacion = JOptionPane.showInputDialog(null, "Ingrese el Número de Habitación (Ej: 101, 102, 201):", "Procesar Asignación", JOptionPane.QUESTION_MESSAGE);
+        if (numHabitacion == null || numHabitacion.trim().isEmpty()) return;
+
+        // Llamada directa al método transaccional del controlador que maneja la persistencia y estados incrementales
+        HotelController.getInstance().procesarCheckInHabitacion(codEvento.trim(), dniInvitado.trim(), numHabitacion.trim());
     }
 
     private void subMenuPremio() {
