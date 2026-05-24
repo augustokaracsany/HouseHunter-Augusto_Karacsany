@@ -332,4 +332,58 @@ public class HotelController {
             return false;
         }
     }
+ // Genera un reporte consolidado con métricas clave de un evento (Mapea el CU44).
+    public String obtenerReporteConsolidadoEvento(String codigoEvento) {
+        StringBuilder reporte = new StringBuilder();
+        
+        // Query avanzada con subconsultas para agrupar los contadores de check-ins y asistencias del evento
+        String sql = "SELECT rh.id, " +
+                     "  (SELECT COUNT(*) FROM lista_invitados_previa lip WHERE lip.id_reserva = rh.id) as total_invitados, " +
+                     "  (SELECT COUNT(DISTINCT ah.id_usuario) FROM asignaciones_habitaciones ah WHERE ah.id_reserva = rh.id) as total_checkins, " +
+                     "  (SELECT COUNT(*) FROM actividades act " +
+                     "   JOIN asistencias_actividades aa ON aa.id_actividad = act.id " +
+                     "   WHERE act.id_reserva = rh.id AND aa.asistio = 'S') as total_asistencias " +
+                     "FROM reservas_hotel rh " +
+                     "WHERE rh.codigo_unico_evento = ?";
+
+        Connection con = ConexionController.getInstance().getConnection();
+
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, codigoEvento);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int totalInvitados = rs.getInt("total_invitados");
+                    int totalCheckins = rs.getInt("total_checkins");
+                    int totalAsistencias = rs.getInt("total_asistencias");
+                    
+                    // Calculamos un porcentaje de asistencia/ocupación base para el reporte
+                    int porcentajeOcupacion = totalInvitados > 0 ? (totalCheckins * 100 / totalInvitados) : 0;
+
+                    // Construimos la interfaz del reporte con CSS básico en el HTML
+                    reporte.append("<html><body style='width: 300px;'>");
+                    reporte.append("<h2 style='text-align: center; color: #2c3e50;'>📊 Reporte Consolidado</h2>");
+                    reporte.append("<p style='text-align: center; margin-top:0;'><b>Evento:</b> ").append(codigoEvento).append("</p><hr>");
+                    
+                    reporte.append("<table style='width: 100%; border-collapse: collapse;'>");
+                    reporte.append("<tr><td><b>📋 Invitados en Lista:</b></td><td style='text-align: right;'>").append(totalInvitados).append("</td></tr>");
+                    reporte.append("<tr><td><b>🏨 Check-ins Exitosos:</b></td><td style='text-align: right;'>").append(totalCheckins).append("</td></tr>");
+                    reporte.append("<tr><td><b>📉 Porcentaje Ocupación:</b></td><td style='text-align: right; color: green;'><b>").append(porcentajeOcupacion).append("%</b></td></tr>");
+                    reporte.append("<tr><td colspan='2'><hr style='border-top: 1px dashed #ccc;'></td></tr>");
+                    reporte.append("<tr><td><b>🎮 Asistencias Totales:</b></td><td style='text-align: right; color: #2980b9;'><b>").append(totalAsistencias).append("</b></td></tr>");
+                    reporte.append("</table>");
+                    
+                    reporte.append("<br><p style='text-align: center; font-size: 9px; color: gray;'>HouseHunter Status Report • Generado Correctamente</p>");
+                    reporte.append("</body></html>");
+                    
+                    return reporte.toString();
+                } else {
+                    return "<html><body>❌ El código de evento ingresado no corresponde a ninguna reserva activa.</body></html>";
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al generar el reporte consolidado: " + e.getMessage());
+            return "<html><body>❌ Error técnico al procesar el reporte analítico en la BD.</body></html>";
+        }
+    }
 }

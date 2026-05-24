@@ -116,12 +116,22 @@ public class Administrador extends Persona {
 
     private void subMenuAdminReportes() {
         ImageIcon iconoReportes = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Reportes.png");
+        String[] opciones = {"Generar reporte de evento", "Volver"};
         
-        JOptionPane.showOptionDialog(
-            null, "<html><body style='width:250px; text-align:center;'><h3>Módulo de Reportes</h3>¿Desea generar el reporte consolidado?</body></html>", 
+        int op = JOptionPane.showOptionDialog(
+            null, "<html><body style='width:250px; text-align:center;'><h3>Módulo de Reportes</h3>Seleccione una acción:</body></html>", 
             "Reportes", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
-            iconoReportes, new String[]{"Generar reporte de evento", "Volver"}, "Generar reporte de evento"
+            iconoReportes, opciones, opciones[0]
         );
+        
+        if (op == 0) { // 📊 Generar reporte de evento
+            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento para consolidar:", "Generar Reporte", JOptionPane.QUESTION_MESSAGE);
+            if (codEvento != null && !codEvento.trim().isEmpty()) {
+                // Invocamos al controlador para traer la sábana de datos procesada
+                String reporteHtml = HotelController.getInstance().obtenerReporteConsolidadoEvento(codEvento.trim());
+                JOptionPane.showMessageDialog(null, reporteHtml, "Métricas del Evento: " + codEvento.trim(), JOptionPane.PLAIN_MESSAGE, iconoReportes);
+            }
+        }
     }
 
     private void subMenuCheckIn() {
