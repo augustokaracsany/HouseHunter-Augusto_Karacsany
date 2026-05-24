@@ -384,4 +384,50 @@ public class HotelController {
             return "<html><body>❌ Error técnico al procesar el reporte analítico en la BD.</body></html>";
         }
     }
+ // Devuelve el estado actual de ocupación de las habitaciones en formato HTML
+    public String obtenerEstadoHabitacionesHtml() {
+        StringBuilder sb = new StringBuilder();
+        String sql = "SELECT numero, estado FROM habitaciones ORDER BY numero ASC";
+        Connection con = ConexionController.getInstance().getConnection();
+
+        try (PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            
+            sb.append("<html><body style='width: 260px;'>");
+            sb.append("<h2 style='text-align: center; color: #27ae60;'>🏨 Ocupación de Habitaciones</h2><hr>");
+            sb.append("<table style='width: 100%; border-collapse: collapse;'>");
+
+            boolean tieneHabitaciones = false;
+            while (rs.next()) {
+                tieneHabitaciones = true;
+                String num = rs.getString("numero");
+                String est = rs.getString("estado");
+                
+                // Definimos el color del badge según el Enum EstadoHabitacion
+                String color = "green";
+                if (est.equalsIgnoreCase("Half")) {
+                    color = "orange";
+                } else if (est.equalsIgnoreCase("Completa")) {
+                    color = "red";
+                }
+
+                sb.append("<tr>")
+                  .append("<td style='padding: 5px; border-bottom: 1px solid #eee;'><b>Habitación ").append(num).append("</b></td>")
+                  .append("<td style='text-align: right; padding: 5px; border-bottom: 1px solid #eee; color: ").append(color).append(";'><b>").append(est).append("</b></td>")
+                  .append("</tr>");
+            }
+            sb.append("</table>");
+            
+            if (!tieneHabitaciones) {
+                sb.append("<p style='text-align: center; color: gray;'>No hay habitaciones cargadas en la BD.</p>");
+            }
+            
+            sb.append("</body></html>");
+            return sb.toString();
+            
+        } catch (SQLException e) {
+            System.err.println("Error al listar habitaciones: " + e.getMessage());
+            return "<html><body>❌ Error técnico al consultar el estado de habitaciones.</body></html>";
+        }
+    }
 }

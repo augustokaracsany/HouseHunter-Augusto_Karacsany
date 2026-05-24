@@ -53,17 +53,36 @@ public class Administrador extends Persona {
     }
 
     private void subMenuRecepcion() {
-        ImageIcon iconoRecepcion = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Recepcion.png");
-        String[] opciones = {"Check-in de invitado", "Asignar habitación", "Volver"};
+        ImageIcon iconoRecepcion = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Recepcion.png"); 
+        String[] opciones = {"Registrar Check-In", "Monitorear Habitaciones", "Volver"};
         
         int op = JOptionPane.showOptionDialog(
-            null, "<html><body style='width:250px; text-align:center;'><h3>Gestión de Recepción</h3>Seleccione una acción:</body></html>", 
-            "Recepción", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
-            iconoRecepcion, opciones, opciones[0]
+            null, 
+            "<html><body style='width:250px; text-align:center;'><h3>Gestión de Recepción</h3>Seleccione una operación:</body></html>", 
+            "Módulo de Recepción", 
+            JOptionPane.DEFAULT_OPTION, 
+            JOptionPane.PLAIN_MESSAGE, 
+            iconoRecepcion, 
+            opciones, 
+            opciones[0]
         );
         
-        if(op == 0) subMenuCheckIn();
-        if(op == 1) subMenuHabitacion();
+        if (op == 0) { // 🏨 Registrar Check-In
+            ejecutarFlujoCheckInCompleto();
+            
+        } else if (op == 1) { // 🔍 Monitorear Habitaciones (¡CORREGIDO!)
+            // Llamamos al nuevo método HTML del controlador
+            String estadoHabitacionesHtml = HotelController.getInstance().obtenerEstadoHabitacionesHtml(); 
+            
+            // Lo mostramos usando el banner verde estético de RECEPCIÓN
+            JOptionPane.showMessageDialog(
+                null, 
+                estadoHabitacionesHtml, 
+                "Control de Ocupación Real", 
+                JOptionPane.PLAIN_MESSAGE, 
+                iconoRecepcion
+            );
+        }
     }
 
     private void subMenuActividades() {
