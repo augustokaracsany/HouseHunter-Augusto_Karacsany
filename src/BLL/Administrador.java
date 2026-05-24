@@ -76,9 +76,16 @@ public class Administrador extends Persona {
             iconoActividades, opciones, opciones[0]
         );
         
-        if (op == 3) {
+        if (op == 1) { // 📊 Visualizar cronograma
+            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento para ver la agenda:", "Consultar Cronograma", JOptionPane.QUESTION_MESSAGE);
+            if (codEvento != null && !codEvento.trim().isEmpty()) {
+                // Llamamos al controlador para renderizar el HTML dinámico de la BD
+                String HTMLResult = HotelController.getInstance().obtenerCronogramaEventos(codEvento.trim());
+                JOptionPane.showMessageDialog(null, HTMLResult, "Agenda del Evento: " + codEvento.trim(), JOptionPane.PLAIN_MESSAGE, iconoActividades);
+            }
+        } else if (op == 3) {
             subMenuPremio();
-        } else if(op != 4 && op != -1) {
+        } else if (op != 4 && op != -1) {
             mostrarMensaje(opciones[op]);
         }
     }

@@ -16,9 +16,7 @@ public class HotelController {
         return instance;
     }
 
-   
-     // Valida si un DNI pertenece a la lista previa autorizada por la Empresa.
-     
+    // Valida si un DNI pertenece a la lista previa autorizada por la Empresa.
     public boolean validarInvitadoPrevia(String codigoEvento, String dni) {
         String sql = "SELECT lip.* FROM lista_invitados_previa lip " +
                      "JOIN reservas_hotel rh ON lip.id_reserva = rh.id " +
@@ -39,9 +37,8 @@ public class HotelController {
         }
     }
 
-      // Procesa el Check-In incremental de habitaciones dobles.
-     // Transiciona el estado usando el Enum EstadoHabitacion: Libre -> Half -> Completa.
-     
+    // Procesa el Check-In incremental de habitaciones dobles.
+    // Transiciona el estado usando el Enum EstadoHabitacion: Libre -> Half -> Completa.
     public boolean procesarCheckInHabitacion(String codigoEvento, String dniHuesped, String numeroHabitacion) {
         Connection con = ConexionController.getInstance().getConnection();
         
@@ -135,6 +132,74 @@ public class HotelController {
             return false;
         } finally {
             try { con.setAutoCommit(true); } catch (SQLException e) { e.printStackTrace(); }
+        }
+    }
+
+    // Obtiene el cronograma de actividades estructurado en HTML para el panel de UI.
+    public String obtenerCronogramaEventos(String codigoEvento) {
+        StringBuilder cronograma = new StringBuilder();
+        
+        // Armo la query cruzando las actividades con la reserva mediante un INNER JOIN 
+        // usando el código único del evento corporativo, y lo ordeno cronológicamente.
+        String sql = "SELECT a.nombre, a.descripcion, a.importancia, a.categoria, a.hora_actividad " +
+                     "FROM actividades a " +
+                     "JOIN reservas_hotel rh ON a.id_reserva = rh.id " +
+                     "WHERE rh.codigo_unico_evento = ? " +
+                     "ORDER BY a.hora_actividad ASC";
+
+        Connection con = ConexionController.getInstance().getConnection();
+
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, codigoEvento);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                // Inicio el armado de la estructura del documento HTML para que JOptionPane lo renderice estéticamente.
+                cronograma.append("<html><body style='width: 320px;'>");
+                cronograma.append("<h2 style='text-align: center; color: #1a5f7a;'>📅 Cronograma de Actividades</h2>");
+                cronograma.append("<p style='text-align: center;'><b>Evento:</b> ").append(codigoEvento).append("</p><hr>");
+
+                boolean tieneActividades = false;
+                
+                // Recorro los registros devueltos por la base de datos fila por fila.
+                while (rs.next()) {
+                    tieneActividades = true;
+                    
+                    // Recorto los segundos de la hora para quedarme sólo con el formato HH:mm.
+                    String hora = rs.getTime("hora_actividad").toString().substring(0, 5);
+                    String nombre = rs.getString("nombre");
+                    String desc = rs.getString("descripcion");
+                    String importancia = rs.getString("importancia");
+                    String categoria = rs.getString("categoria");
+
+                    // Defino un color dinámico para la etiqueta según el nivel de criticidad o importancia.
+                    String colorImportancia = "gray";
+                    if (importancia.equalsIgnoreCase("Alta")) {
+                        colorImportancia = "red";
+                    } else if (importancia.equalsIgnoreCase("Media")) {
+                        colorImportancia = "orange";
+                    }
+
+                    // Inyecto los datos de la actividad actual en las etiquetas HTML correspondientes.
+                    cronograma.append("<p style='margin-bottom: 2px;'><b>⏱️ ").append(hora).append(" hs</b> - ").append(nombre).append("</p>");
+                    cronograma.append("<p style='margin-left: 15px; color: #555; margin-top: 0px;'><i>").append(desc != null ? desc : "Sin descripción").append("</i><br>");
+                    cronograma.append("<small>📁 Cat: ").append(categoria)
+                              .append(" | <font color='").append(colorImportancia).append("'>🔥 ").append(importancia).append("</font></small></p>");
+                    cronograma.append("<hr style='border-top: 1px dashed #ccc;'>");
+                }
+
+                cronograma.append("</body></html>");
+
+                // Valido si el evento no existe o simplemente carece de itinerario asignado en la BD.
+                if (!tieneActividades) {
+                    return "<html><body>❌ No se encontraron actividades registradas para el código de evento ingresado.</body></html>";
+                }
+
+                return cronograma.toString();
+            }
+        } catch (SQLException e) {
+            // Registro el error de SQL de manera interna y devuelvo un aviso genérico pero seguro para la interfaz.
+            System.err.println("Error al obtener el cronograma: " + e.getMessage());
+            return "<html><body>❌ Error técnico al consultar la base de datos.</body></html>";
         }
     }
 }
