@@ -17,10 +17,11 @@ public class Empresa extends Persona {
     private String razonSocial;
 
  // Controladores
-    private EventoController eventoController = new EventoController();
+    private EventoController eventoController = EventoController.getInstance(); // HOTFIX: Cambiado de new a getInstance()
     private InvitadoController invitadoController = new InvitadoController();
     private ReporteController reporteController = new ReporteController();
-    private HotelController hotelController = HotelController.getInstance(); // FIX Singleton -> Augusto.
+    private HotelController hotelController = HotelController.getInstance(); 
+    
     // Reserva actual ( La que se está gestionando. )
     private Reserva reservaActual;
 
