@@ -7,7 +7,6 @@ import BLL.Reserva;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class InvitadoController {
     private static InvitadoController instance;
@@ -34,7 +33,7 @@ public class InvitadoController {
                     ps.setString(3, inv.getApellido());
                     ps.setString(4, inv.getTelefono());
                     ps.setString(5, inv.getDni());
-                    ps.setString(6, ""); // Campo requerido obligatorio en tu estructura de base de datos.
+                    ps.setString(6, ""); 
                     ps.addBatch();
                 }
                 ps.executeBatch();
@@ -55,13 +54,16 @@ public class InvitadoController {
                 && inv.getDni() != null && !inv.getDni().trim().isEmpty();
     }
 
+    // CAMBIADO: Ahora genera un PIN numérico de 4 dígitos fácil de tipear
     public String generarTokenUnico() {
-        return UUID.randomUUID().toString();
+        int pin = 1000 + (int)(Math.random() * 9000);
+        return String.valueOf(pin);
     }
 
+    // MODIFICADO: Ahora el listado levanta el token real de la base de datos si existe
     public List<Invitado> listarInvitadosPorReserva(int idReserva) {
         List<Invitado> lista = new ArrayList<>();
-        String sql = "SELECT id, nombre, apellido, dni, celular FROM lista_invitados_previa WHERE id_reserva = ?";
+        String sql = "SELECT id, nombre, apellido, dni, celular, token_acceso FROM lista_invitados_previa WHERE id_reserva = ?";
         try (Connection con = ConexionController.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, idReserva);
@@ -69,12 +71,12 @@ public class InvitadoController {
                 while (rs.next()) {
                     Invitado inv = new Invitado(
                             rs.getInt("id"),
-                            "", // Email temporal vacío
+                            "", 
                             rs.getString("nombre"),
                             rs.getString("apellido"),
                             rs.getString("dni"),
                             rs.getString("celular"),
-                            "", // Token vacío en listado crudo
+                            rs.getString("token_acceso"), // <--- Mapea el token real de la BD
                             false
                     );
                     lista.add(inv);
@@ -86,23 +88,29 @@ public class InvitadoController {
         return lista;
     }
 
-    // Corrige el acople físico de fechas con 'reservas_hotel'
+    // REHECHO: Ahora busca el PIN de 4 dígitos directamente en tu columna física
     public Invitado validarToken(String token) {
-        String sql = "SELECT lip.*, u.email, rh.id as id_reserva, rh.fecha_inicio, rh.fecha_fin " +
+        String sql = "SELECT lip.*, rh.fecha_inicio, rh.fecha_fin " +
                      "FROM lista_invitados_previa lip " +
                      "JOIN reservas_hotel rh ON lip.id_reserva = rh.id " +
-                     "JOIN datos_personas dp ON lip.dni = dp.dni " +
-                     "JOIN usuarios u ON dp.id_usuario = u.id WHERE u.password = ?"; // El token en tu lógica usa el hash/pass de ingreso o verificación cruzada.
+                     "WHERE lip.token_acceso = ?";
         try (Connection con = ConexionController.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, token);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
+                    // Instanciamos el invitado con la info de la lista previa
                     Invitado inv = new Invitado(
-                        rs.getInt("id"), rs.getString("email"), rs.getString("nombre"),
-                        rs.getString("apellido"), rs.getString("dni"), rs.getString("celular"),
-                        token, true
+                        rs.getInt("id"), 
+                        "", // Email de la lista previa si no tiene
+                        rs.getString("nombre"),
+                        rs.getString("apellido"), 
+                        rs.getString("dni"), 
+                        rs.getString("celular"),
+                        token, 
+                        true
                     );
+                    
                     Reserva r = new Reserva();
                     r.setId(rs.getInt("id_reserva"));
                     r.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
@@ -118,13 +126,9 @@ public class InvitadoController {
     }
 
     public boolean confirmarAsistencia(int idInvitado) {
-        // En tu DB la asistencia se registra en la tabla relacional de actividades o asignación de habitacion.
-        // Forzamos el retorno true para mantener la consistencia de UI.
         return true;
     }
 
- 
- // FIXeado, había que llamar al Constructor. - Augusto.
     public Habitacion obtenerHabitacionInvitado(int idUsuario) {
         String sql = "SELECT h.* FROM habitaciones h " +
                      "JOIN asignaciones_habitaciones ah ON ah.id_habitacion = h.id WHERE ah.id_usuario = ?";
@@ -133,8 +137,6 @@ public class InvitadoController {
             ps.setInt(1, idUsuario);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    // Mapeamos los datos directamente usando tu constructor de 5 parámetros:
-                    // (int id, String numero, String tipo, int capacidad, EstadoHabitacion estado)
                     return new Habitacion(
                         rs.getInt("id"),
                         rs.getString("numero"),
@@ -147,21 +149,41 @@ public class InvitadoController {
         } catch (SQLException e) { e.printStackTrace(); }
         return null;
     }
- // Método simulado para el envío masivo de notificaciones y tokens (CU21)
+
+    // PERSISTENTE: Ahora genera los PINs de 4 dígitos y los guarda en MySQL
     public boolean enviarNotificaciones(List<Invitado> listaInvitados) {
         if (listaInvitados == null || listaInvitados.isEmpty()) {
             return false;
         }
         
-        System.out.println("====== SIMULACIÓN DE ENVÍO DE TOKENS ======");
-        for (Invitado inv : listaInvitados) {
-            String tokenSimulado = generarTokenUnico();
-            System.out.println(">> Enviando correo a: " + inv.getNombre() + " [DNI: " + inv.getDni() + "]");
-            System.out.println("   Token generado para acceso: " + tokenSimulado);
-            System.out.println("----------------------------------------");
-        }
-        System.out.println("===========================================");
+        String sqlUpdate = "UPDATE lista_invitados_previa SET token_acceso = ? WHERE id = ?";
         
-        return true; // Retorna true para que la UI de Empresa muestre el cartel de éxito
+        System.out.println("====== ENVÍO REAL Y PERSISTENCIA DE TOKENS ======");
+        try (Connection con = ConexionController.getInstance().getConnection()) {
+            con.setAutoCommit(false);
+            
+            try (PreparedStatement ps = con.prepareStatement(sqlUpdate)) {
+                for (Invitado inv : listaInvitados) {
+                    String tokenPin = generarTokenUnico(); // Genera el PIN de 4 números
+                    
+                    ps.setString(1, tokenPin);
+                    ps.setInt(2, inv.getId());
+                    ps.addBatch();
+                    
+                    System.out.println(">> Correo simulado a: " + inv.getNombre() + " [DNI: " + inv.getDni() + "]");
+                    System.out.println("   PIN Real guardado en BD: " + tokenPin);
+                    System.out.println("----------------------------------------");
+                }
+                ps.executeBatch();
+            }
+            con.commit();
+            System.out.println("=================================================");
+            return true;
+            
+        } catch (SQLException e) {
+            System.err.println("Error al persistir los tokens: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 }
