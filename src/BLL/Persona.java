@@ -24,6 +24,10 @@ public abstract class Persona {
     public void setId(int id) { this.id = id; }
     public String getEmail() { return email; }
     public Rol getRol() { return rol; }
+ // Getter de Password para FIXear AutenticacionController.java.
+    public String getPassword() { 
+        return password; 
+    }
     
     // Contratos Abstractos. ( El "Qué" sin el "Cómo" ).
 

@@ -7,8 +7,8 @@ import java.util.LinkedList;
 
 public class UsuariosController extends UsuariosRepository {
 
-    @Override
-    public Persona login(String email, String password) {
+    // Método enfocado puramente en persistencia: busca y arma el objeto si el mail existe.
+    public Persona obtenerUsuarioPorEmail(String email) {
         Persona usuario = null;
         String sql = "SELECT u.*, p.dni, p.nombre, p.apellido, e.cuit, e.razon_social " +
                      "FROM usuarios u " +
@@ -23,35 +23,33 @@ public class UsuariosController extends UsuariosRepository {
             
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    String passHasheadaBD = rs.getString("password");
+                    Rol rolEnum = Rol.valueOf(rs.getString("rol"));
+                    String mail = rs.getString("email");
+                    String passBD = rs.getString("password"); // Recuperamos el hash de la BD.
 
-                    if (Hashing.verificar(password, passHasheadaBD)) {
-                        Rol rolEnum = Rol.valueOf(rs.getString("rol"));
-                        String mail = rs.getString("email");
-
-                        if (rolEnum == Rol.EMPRESA) {
-                            usuario = new Empresa(mail, passHasheadaBD, rs.getString("cuit"), rs.getString("razon_social"), rolEnum);
-                        } else if (rolEnum == Rol.ADMINISTRADOR) {
-                            String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
-                            usuario = new Administrador(mail, passHasheadaBD, nombreCompleto, rs.getString("dni"), rolEnum);
-                        } else {
-                            usuario = new Invitado(mail, passHasheadaBD, rs.getString("nombre"), rolEnum);
-                        }
-                        
-                        usuario.setId(rs.getInt("id"));
-                        System.out.println("ℹ️ Hashing: Login exitoso para el usuario: " + mail);
-                        
+                    if (rolEnum == Rol.EMPRESA) {
+                        usuario = new Empresa(mail, passBD, rs.getString("cuit"), rs.getString("razon_social"), rolEnum);
+                    } else if (rolEnum == Rol.ADMINISTRADOR) {
+                        String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
+                        usuario = new Administrador(mail, passBD, nombreCompleto, rs.getString("dni"), rolEnum);
                     } else {
-                        System.out.println("❌ Hashing: Contraseña incorrecta para el usuario: " + email);
+                        usuario = new Invitado(mail, passBD, rs.getString("nombre"), rolEnum);
                     }
-                } else {
-                    System.out.println("❌ Hashing: No se encontró ningún usuario con el email: " + email);
+                    
+                    usuario.setId(rs.getInt("id"));
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error en login: " + e.getMessage());
+            System.err.println("Error al buscar usuario por email: " + e.getMessage());
         }
-        return usuario;
+        return usuario; // Puede devolver la entidad armada o null si el mail no existe.
+    }
+
+    @Override
+    public Persona login(String email, String password) {
+        // Podés dejar este método heredado llamando directamente al nuevo esquema o 
+        // dejarlo deprecado, pero la lógica de control migra al AutenticacionController.
+        return null; 
     }
 
     @Override
@@ -97,16 +95,13 @@ public class UsuariosController extends UsuariosRepository {
         Connection con = ConexionController.getInstance().getConnection();
         
         try {
-        	// Desactivamos el AUTOCOMMIT para manejarlo como una Única Transacción Segura.
-            con.setAutoCommit(false);
+            con.setAutoCommit(false); // Transacción atómica segura para evitar datos huérfanos.
             
             try (PreparedStatement psUser = con.prepareStatement(sqlUsuario, Statement.RETURN_GENERATED_KEYS)) {
                 psUser.setString(1, email);
-                // Acá se Encripta la Clave con la configuración de Gamaliel.
-                psUser.setString(2, Hashing.hash(password));
+                psUser.setString(2, Hashing.hash(password)); // El hash en el alta es correcto acá antes de persistir.
                 psUser.setString(3, rol.toString());
                 
-                // Obtenemos el ID Auto-Incremental asignado automáticamente por MySQL.
                 int filasAfectadas = psUser.executeUpdate();
                 if (filasAfectadas == 0) {
                     con.rollback();
@@ -120,28 +115,26 @@ public class UsuariosController extends UsuariosRepository {
                     }
                 }
                 
-                // Dependiendo del Rol, insertamos en su tabla de datos complementaria que corresponden.
                 if (rol == Rol.EMPRESA) {
                     String sqlEmpresa = "INSERT INTO datos_empresas (id_usuario, cuit, razon_social) VALUES (?, ?, ?)";
                     try (PreparedStatement psEmp = con.prepareStatement(sqlEmpresa)) {
                         psEmp.setInt(1, idUsuarioGenerado);
-                        psEmp.setString(2, datoPrincipal);  // CUIT.
-                        psEmp.setString(3, datoSecundario); // Razón Social.
+                        psEmp.setString(2, datoPrincipal);  
+                        psEmp.setString(3, datoSecundario); 
                         psEmp.executeUpdate();
                     }
                 } else if (rol == Rol.INVITADO) {
                     String sqlPersona = "INSERT INTO datos_personas (id_usuario, nombre, apellido, dni) VALUES (?, ?, ?, ?)";
                     try (PreparedStatement psPers = con.prepareStatement(sqlPersona)) {
                         psPers.setInt(1, idUsuarioGenerado);
-                        psPers.setString(2, datoPrincipal);   // Nombre.
-                        psPers.setString(3, datoSecundario);  // Apellido.
-                        psPers.setString(4, datoTerciario);   // 🚀 Ahora el DNI debería funcionar, como nadie se dió cuenta de esto antes.
+                        psPers.setString(2, datoPrincipal);   
+                        psPers.setString(3, datoSecundario);  
+                        psPers.setString(4, datoTerciario);   
                         psPers.executeUpdate();
                     }
                 }
                 
                 con.commit();
-                System.out.println("ℹ️ Hashing/SQL: Usuario registrado con éxito: " + email);
                 return true;
                 
             } catch (SQLException e) {
