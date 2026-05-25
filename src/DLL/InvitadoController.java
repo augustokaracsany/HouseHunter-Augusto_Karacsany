@@ -124,7 +124,7 @@ public class InvitadoController {
     }
 
  
- // Obtener habitación asignada (CU28) - IMPLEMENTACIÓN CON CONSTRUCTOR UNIFICADO
+ // FIXeado, había que llamar al Constructor. - Augusto.
     public Habitacion obtenerHabitacionInvitado(int idUsuario) {
         String sql = "SELECT h.* FROM habitaciones h " +
                      "JOIN asignaciones_habitaciones ah ON ah.id_habitacion = h.id WHERE ah.id_usuario = ?";

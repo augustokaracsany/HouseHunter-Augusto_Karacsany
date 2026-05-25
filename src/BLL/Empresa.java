@@ -92,7 +92,6 @@ public class Empresa extends Persona {
         }
     }
 
-    // Corregidas líneas 106, 107 y 108: Implementación nativa de rango de fechas (fecha_inicio y fecha_fin)
     private void realizarReserva() {
         String fechaInicioStr = JOptionPane.showInputDialog(null, "Fecha de Inicio / Check-In (YYYY-MM-DD):", "Nueva Reserva", JOptionPane.QUESTION_MESSAGE);
         if (fechaInicioStr == null) return; 
@@ -116,8 +115,6 @@ public class Empresa extends Persona {
             if (eventoController.verificarDisponibilidad(fechaInicio, fechaFin)) {
                 Reserva nueva = new Reserva(this, fechaInicio, fechaFin, numInvitados);
                 
-                // CORRECCIÓN: Le pasamos 'nueva' y el CUIT de esta empresa (this.cuit) 
-                // para cumplir con la firma (Reserva, String) que te pide el controlador.
                 eventoController.crearReserva(nueva, this.cuit);
                 
                 reservaActual = nueva; 
@@ -336,7 +333,6 @@ public class Empresa extends Persona {
     }
 
     private void enviarNotificaciones() {
-        // CORRECCIÓN: Primero recuperamos la lista de invitados reales de la reserva activa
         List<Invitado> invitadosAEnviar = invitadoController.listarInvitadosPorReserva(reservaActual.getId());
         
         if (invitadosAEnviar.isEmpty()) {
@@ -344,10 +340,6 @@ public class Empresa extends Persona {
             return;
         }
 
-        // Modificá la llamada según cómo esté definido en tu InvitadoController:
-        // Opción A: Si tu controlador recibe la lista -> invitadoController.enviarNotificaciones(invitadosAEnviar)
-        // Opción B: Si no recibe parámetros -> invitadoController.enviarNotificaciones()
-        // Asumiendo que procesa la lista que acabamos de buscar:
         if (invitadoController.enviarNotificaciones(invitadosAEnviar)) {
             JOptionPane.showMessageDialog(null, "✅ Notificaciones enviadas (simulado).\nRevise la consola para ver los tokens.");
         } else {
@@ -390,7 +382,6 @@ public class Empresa extends Persona {
         JOptionPane.showMessageDialog(null, mensaje);
     }
 
-    // Corregida línea 382: Mapeo dinámico leyendo fechaInicio y fechaFin en el selector Swing
     private boolean seleccionarReservaActual() {
         if (reservaActual != null) return true;
         List<Reserva> reservas = eventoController.listarReservasPorEmpresa(this.getId());
@@ -399,7 +390,6 @@ public class Empresa extends Persona {
             return false;
         }
         
-        // Se cambió r.getFechaEvento() por el rango real corregido de tu base de datos
         String[] opciones = reservas.stream()
             .map(r -> "ID " + r.getId() + " - [" + r.getFechaInicio() + " al " + r.getFechaFin() + "]")
             .toArray(String[]::new);
@@ -411,5 +401,37 @@ public class Empresa extends Persona {
             return true;
         }
         return false;
+    }
+
+    // =========================================================================
+    // 🛠️ ENCAPSULAMIENTO: GETTERS Y SETTERS COMPLEMENTARIOS PARA CONTROLADORES
+    // =========================================================================
+    
+    public String getCuit() {
+        return cuit;
+    }
+
+    public void setCuit(String cuit) {
+        this.cuit = cuit;
+    }
+
+    public String getRazonSocial() {
+        return razonSocial;
+    }
+
+    public void setRazonSocial(String razonSocial) {
+        this.razonSocial = razonSocial;
+    }
+
+    /**
+     * Permite a la capa de infraestructura (AutenticacionController) inyectar
+     * de forma atómica la reserva activa vinculada mediante el token del login.
+     */
+    public Reserva getReservaActual() {
+        return reservaActual;
+    }
+
+    public void setReservaActual(Reserva reservaActual) {
+        this.reservaActual = reservaActual;
     }
 }

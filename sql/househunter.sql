@@ -124,7 +124,7 @@ CREATE TABLE `actividades` (
   `id_reserva` int(11) NOT NULL,
   `nombre` varchar(150) NOT NULL,
   `descripcion` text DEFAULT NULL,
-  `importancia` enum('Alta','Media','Baja') NOT NULL,
+  `importancia` enum('ALTA','MEDIA','BAJA') NOT NULL,
   `categoria` enum('Cowork','Charlas','Recreacion','Descanso','Variados','Otros') NOT NULL,
   `hora_actividad` time NOT NULL,
   PRIMARY KEY (`id`),

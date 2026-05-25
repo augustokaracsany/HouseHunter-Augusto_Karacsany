@@ -1,6 +1,7 @@
 package DLL; // Capa de Acceso a Datos / Controladores de Flujo. < DLL.
 
 import BLL.Persona;
+import BLL.Reserva;
 import Repository.Hashing; // Ajustar importación según dónde esté tu clase Hashing
 import Repository.UsuariosController;
 
@@ -38,7 +39,22 @@ public class AutenticacionController {
         // 2. Ejecuta la verificación del hash utilizando el método Getter público de Persona
         if (Hashing.verificar(password, usuarioBD.getPassword())) {
             System.out.println("ℹ️ Autenticación: Login exitoso para el usuario: " + email);
-            return usuarioBD; // Retorna la instancia polimórfica (Empresa, Administrador, Invitado).
+            
+            // 3. CONEXIÓN DETECTADA: Si el usuario es de tipo Empresa, le hidratamos su evento activo
+            if (usuarioBD instanceof BLL.Empresa) {
+                BLL.Empresa emp = (BLL.Empresa) usuarioBD;
+                
+                // Buscamos si en la DB ya existe la reserva 'GLOBANT-2026' para el ID de este usuario.
+                Reserva reservaGlobant = EventoController.getInstance()
+                        .obtenerReservaActivaPorCodigo(emp.getId(), "GLOBANT-2026");
+                
+                if (reservaGlobant != null) {
+                    emp.setReservaActual(reservaGlobant);
+                    System.out.println("✅ Evento 'GLOBANT-2026' acoplado correctamente a la sesión de Globant S.A.");
+                }
+            }
+
+            return usuarioBD; // Retorna la instancia polimórfica lista para usar en el menú
         } else {
             System.out.println("❌ Autenticación: Contraseña incorrecta para el usuario: " + email);
             return null;

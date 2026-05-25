@@ -169,7 +169,7 @@ public class EventoController {
                     Time hora = rs.getTime("hora_actividad");
                     a.setFechaHora(LocalDate.now().atTime(hora.toLocalTime()));
                     
-                    a.setImportancia(Importancia.valueOf(rs.getString("importancia"))); 
+                    a.setImportancia(Importancia.valueOf(rs.getString("importancia").toUpperCase())); 
                     a.setCategoria(rs.getString("categoria"));
                     lista.add(a);
                 }
@@ -273,5 +273,33 @@ public class EventoController {
         } catch (SQLException e) {
             return "<html><body>❌ Error técnico al compilar reportes: " + e.getMessage() + "</body></html>";
         }
+    }
+ // Recupera una reserva específica mediante el ID de usuario de la empresa y su código único, cargando sus actividades
+    public Reserva obtenerReservaActivaPorCodigo(int idUsuarioEmpresa, String codigoEvento) {
+        String sqlReserva = "SELECT * FROM reservas_hotel WHERE id_empresa = ? AND codigo_unico_evento = ?";
+        try (Connection con = ConexionController.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sqlReserva)) {
+            
+            ps.setInt(1, idUsuarioEmpresa);
+            ps.setString(2, codigoEvento);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Reserva r = new Reserva();
+                    r.setId(rs.getInt("id"));
+                    r.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
+                    r.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
+                    r.setCantidadEstimadaAsistentes(rs.getInt("cantidad_estimada_asistentes"));
+                    r.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                    
+                    // Inyectamos las actividades vinculadas automáticamente usando tu método existente
+                    r.setActividades(obtenerActividadesPorReserva(r.getId()));
+                    return r;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al recuperar la reserva activa por código: " + e.getMessage());
+        }
+        return null;
     }
 }
