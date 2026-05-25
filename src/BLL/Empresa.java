@@ -1,41 +1,43 @@
-package BLL;
+package BLL; 
 
-import DLL.ActividadController;
-import DLL.EventoController;
-import DLL.InvitadoController;
-import DLL.ReporteController;
-import javax.swing.ImageIcon;
-import javax.swing.JOptionPane;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import DLL.ActividadController; 
+import DLL.EventoController; 
+import DLL.InvitadoController; 
+import DLL.ReporteController; 
+import javax.swing.ImageIcon; 
+import javax.swing.JOptionPane; 
+import java.time.LocalDate; 
+import java.time.LocalDateTime; 
+import java.util.ArrayList; 
+import java.util.List; 
+import java.util.Map; 
 
 public class Empresa extends Persona {
-    private String cuit;
-    private String razonSocial;
+	// ( Herencia. ) Empresa hereda credenciales de Persona para reutilizar el login.
+    private String cuit; 
+    private String razonSocial; 
 
- // Controladores activos de forma unificada
+    // ( Singleton. ) Enganche a las instancias únicas de la capa de datos (DLL) para no saturar conexiones.
     private EventoController eventoController = EventoController.getInstance();
     private InvitadoController invitadoController = InvitadoController.getInstance();
-    private ReporteController reporteController = new ReporteController();
-    private ActividadController actividadController = ActividadController.getInstance(); // ¡CORREGIDO al Singleton real!
-    // Reserva actual ( La que se está gestionando. )
+    private ReporteController reporteController = new ReporteController(); 
+    private ActividadController actividadController = ActividadController.getInstance(); 
+    
+    // Memoria: Guarda el evento que la empresa está operando en este momento.
     private Reserva reservaActual;
-
+    
     public Empresa(String email, String password, String cuit, String razonSocial, Rol rol) {
-        super(email, password, rol);
-        this.cuit = cuit;
+        super(email, password, rol); // Setea la base heredada en el constructor del padre.
+        this.cuit = cuit;            // Setea los atributos propios obligatorios de Empresa.
         this.razonSocial = razonSocial;
     }
 
-    @Override
+    @Override 
     public String getNombre() {
-        return razonSocial;
+        return razonSocial; // Devuelve el Nombre Legal para los carteles de la interfaz. < Nombre Legal de la Empresa.
     }
 
-    @Override
+    @Override 
     public void mostrarMenu() {
         ImageIcon iconoMenu = new ImageIcon("src/img/HouseHunter_Menu-Empresa.png");
         
@@ -53,6 +55,7 @@ public class Empresa extends Persona {
         };
 
         int seleccion;
+        // Bucle para mantener vivo el panel principal hasta que metan deslogueo o fuercen escape.
         do {
             seleccion = JOptionPane.showOptionDialog(
                 null, tituloMenu, "HouseHunter v1.0",
@@ -70,7 +73,7 @@ public class Empresa extends Persona {
         } while (seleccion != 4 && seleccion != -1);
     }
 
-    // ====================== GESTIÓN DE EVENTO ======================
+    // ( Gestión de Evento. )
     private void subMenuGestionEvento() {
         ImageIcon iconoGestion = new ImageIcon("src/img/HouseHunter_Menu-Empresa_Gestion.png");
         String[] opciones = {"Realizar Reserva", "Cargar Invitados", "Seleccionar Plantilla", "Volver"};
@@ -92,9 +95,10 @@ public class Empresa extends Persona {
 
     private void realizarReserva() {
         String fechaStr = JOptionPane.showInputDialog(null, "Fecha del evento (YYYY-MM-DD):", "Nueva Reserva", JOptionPane.QUESTION_MESSAGE);
-        if (fechaStr == null) return;
+        if (fechaStr == null) return; // Escape si cancela la carga.
+        
         try {
-            LocalDate fechaEvento = LocalDate.parse(fechaStr);
+            LocalDate fechaEvento = LocalDate.parse(fechaStr); // Castea a fecha real. Si el formato está mal, salta al catch.
             String numInvStr = JOptionPane.showInputDialog(null, "Número estimado de invitados:", "Cantidad", JOptionPane.QUESTION_MESSAGE);
             if (numInvStr == null) return;
             int numInvitados = Integer.parseInt(numInvStr);
@@ -102,18 +106,19 @@ public class Empresa extends Persona {
             if (eventoController.verificarDisponibilidad(fechaEvento, numInvitados)) {
                 Reserva nueva = new Reserva(this, fechaEvento, numInvitados);
                 eventoController.crearReserva(nueva);
-                reservaActual = nueva;
+                reservaActual = nueva; 
                 JOptionPane.showMessageDialog(null, "✅ Reserva creada exitosamente.\nID: " + nueva.getId());
             } else {
                 JOptionPane.showMessageDialog(null, "❌ No hay disponibilidad para la fecha seleccionada.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
+            // Atrapa entradas inválidas ( letras o fechas rotas. ) para evitar que el sistema crasheé en vivo y en directo.
             JOptionPane.showMessageDialog(null, "Datos inválidos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void cargarInvitadosMasivo() {
-        if (!seleccionarReservaActual()) return;
+        if (!seleccionarReservaActual()) return; // Filtro: Si no hay evento activo, frena acá.
 
         String datos = JOptionPane.showInputDialog(null,
                 "Ingrese los invitados en el siguiente formato:\n"
@@ -124,20 +129,20 @@ public class Empresa extends Persona {
                 "Carga Masiva de Invitados", JOptionPane.QUESTION_MESSAGE);
         if (datos == null || datos.trim().isEmpty()) return;
 
-        String[] lineas = datos.split(";");
+        String[] lineas = datos.split(";"); // Separa el bloque de texto por cada persona.
         List<Invitado> lista = new ArrayList<>();
         int errores = 0;
 
         for (String linea : lineas) {
-            String[] campos = linea.split(",");
-            if (campos.length < 3) {
+            String[] campos = linea.split(","); // Abre los atributos separados por coma.
+            if (campos.length < 3) { 
                 errores++;
-                continue;
+                continue; // Falta dato crítico ( Nombre, Mail o DNI ). Descarta fila y pasa a la siguiente.
             }
             String nombre = campos[0].trim();
             String email = campos[1].trim();
             String dni = campos[2].trim();
-            String telefono = (campos.length > 3) ? campos[3].trim() : "";
+            String telefono = (campos.length > 3) ? campos[3].trim() : ""; // Por si no tiene teléfono.
 
             Invitado inv = new Invitado(email, "", nombre, Rol.INVITADO);
             inv.setDni(dni);
@@ -171,6 +176,7 @@ public class Empresa extends Persona {
             return;
         }
 
+        // Mapea la lista en un array de Strings para mostrar los botones del OptionDialog.
         String[] nombres = plantillas.stream().map(Plantilla::getNombre).toArray(String[]::new);
         int sel = JOptionPane.showOptionDialog(null, "Seleccione una plantilla para el evento:", "Plantillas",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, nombres, nombres[0]);
@@ -184,7 +190,7 @@ public class Empresa extends Persona {
         }
     }
 
-    // ====================== PLANIFICACIÓN (CRONOGRAMA) ======================
+    // ( Cronograma. )
     private void subMenuCronograma() {
         if (!seleccionarReservaActual()) return;
 
@@ -214,21 +220,26 @@ public class Empresa extends Persona {
         if (duracionStr == null) return;
         String cupoStr = JOptionPane.showInputDialog("Cupo máximo:");
         if (cupoStr == null) return;
+        
         String importanciaStr = (String) JOptionPane.showInputDialog(null, "Importancia:", "Importancia",
                 JOptionPane.QUESTION_MESSAGE, null, new String[]{"BAJA","MEDIA","ALTA"}, "MEDIA");
         
+        // Carga el selector inyectando directamente los valores del Enum CategoriaActividad.
         CategoriaActividad categoriaSeleccionada = (CategoriaActividad) JOptionPane.showInputDialog(null, "Categoría:", "Categoría",
                 JOptionPane.QUESTION_MESSAGE, null, CategoriaActividad.values(), CategoriaActividad.CHARLA);
         String categoria = (categoriaSeleccionada != null) ? categoriaSeleccionada.toString() : "OTRO";
 
         try {
+            // LocalDateTime se usa acá.
             LocalDateTime fechaHora = LocalDateTime.parse(fechaHoraStr.replace(" ", "T"));
             int duracion = Integer.parseInt(duracionStr);
             int cupo = Integer.parseInt(cupoStr);
+            
             Actividad act = new Actividad(nombre, fechaHora, duracion, cupo, Importancia.valueOf(importanciaStr), categoria);
             act.setReserva(reservaActual);
             List<Actividad> lista = new ArrayList<>();
             lista.add(act);
+            
             if (eventoController.guardarCronograma(reservaActual.getId(), lista)) {
                 JOptionPane.showMessageDialog(null, "Actividad agregada al cronograma.");
             } else {
@@ -249,12 +260,15 @@ public class Empresa extends Persona {
         int sel = JOptionPane.showOptionDialog(null, "Seleccione la actividad a modificar:", "Asignar importancia",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, nombresActs, nombresActs[0]);
         if (sel < 0) return;
+        
         Actividad act = actividades.get(sel);
         String nuevaImp = (String) JOptionPane.showInputDialog(null, "Nueva importancia:", "Importancia",
                 JOptionPane.QUESTION_MESSAGE, null, new String[]{"BAJA","MEDIA","ALTA"}, act.getImportancia().toString());
         if (nuevaImp != null) {
             act.setImportancia(Importancia.valueOf(nuevaImp));
             List<Actividad> todas = eventoController.obtenerActividadesPorReserva(reservaActual.getId());
+            
+            // Recorre la lista de la BD en memoria para pisar la importancia de la actividad modificada.
             for (Actividad a : todas) {
                 if (a.getId() == act.getId()) a.setImportancia(act.getImportancia());
             }
@@ -275,7 +289,7 @@ public class Empresa extends Persona {
         JOptionPane.showMessageDialog(null, "Cronograma guardado correctamente.\nTotal actividades: " + actividades.size());
     }
 
-    // ====================== INVITACIONES ======================
+    // ( Invitaciones. )
     private void subMenuInvitaciones() {
         if (!seleccionarReservaActual()) return;
 
@@ -302,6 +316,7 @@ public class Empresa extends Persona {
             JOptionPane.showMessageDialog(null, "No hay invitados cargados.");
             return;
         }
+        // StringBuilder para optimizar el uso de memoria en bucles masivos en lugar de usar concatenación clásica (+).
         StringBuilder sb = new StringBuilder("📋 Invitados:\n");
         for (Invitado i : invitados) {
             sb.append("- ").append(i.getNombre())
@@ -320,7 +335,7 @@ public class Empresa extends Persona {
         }
     }
 
-    // ====================== REPORTES ======================
+    // ( Reportes. )
     private void subMenuReportes() {
         if (!seleccionarReservaActual()) return;
 
@@ -339,6 +354,7 @@ public class Empresa extends Persona {
     }
 
     private void mostrarEstadisticas() {
+        // Estructura Map ( Clave-Valor ) para levantar las métricas procesadas por el controlador.
         Map<String, Object> stats = reporteController.obtenerReporteEvento(reservaActual.getId());
         String mensaje = String.format(
             "📊 REPORTE DEL EVENTO ID %d\n\n" +
@@ -347,7 +363,7 @@ public class Empresa extends Persona {
             "Porcentaje confirmación: %.2f%%\n" +
             "Total actividades programadas: %d",
             reservaActual.getId(),
-            stats.getOrDefault("totalInvitados", 0),
+            stats.getOrDefault("totalInvitados", 0), // El Default evita un NullPointerException si la clave viene vacía.
             stats.getOrDefault("confirmados", 0),
             stats.getOrDefault("porcentajeConfirmacion", 0.0),
             stats.getOrDefault("totalActividades", 0)
@@ -355,6 +371,7 @@ public class Empresa extends Persona {
         JOptionPane.showMessageDialog(null, mensaje);
     }
 
+    // Contexto: Si no hay reserva, abre selector para traer las existentes desde MySQL.
     private boolean seleccionarReservaActual() {
         if (reservaActual != null) return true;
         List<Reserva> reservas = eventoController.listarReservasPorEmpresa(this.getId());
