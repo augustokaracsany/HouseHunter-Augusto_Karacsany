@@ -88,6 +88,19 @@ INSERT INTO `habitaciones` (`id`, `numero`, `estado`) VALUES
 (5, '202', 'Libre'),
 (6, '203', 'Libre');
 
+CREATE TABLE `plantillas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `url_imagen` varchar(255) DEFAULT NULL,
+  `activa` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `plantillas` (`id`, `nombre`, `descripcion`, `url_imagen`, `activa`) VALUES
+(1, 'Corporativo Tech', 'Diseño oscuro con tonos azules para eventos de sistemas.', 'src/img/tech.png', 1),
+(2, 'Branding Ejecutivo', 'Estilo minimalista y formal para juntas de negocios.', 'src/img/executive.png', 1);
+
 CREATE TABLE `reservas_hotel` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `id_empresa` int(11) NOT NULL,
@@ -95,10 +108,12 @@ CREATE TABLE `reservas_hotel` (
   `fecha_inicio` date NOT NULL,
   `fecha_fin` date NOT NULL,
   `cantidad_estimada_asistentes` int(11) NOT NULL,
+  `id_plantilla` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `codigo_unico_evento` (`codigo_unico_evento`),
-  KEY `id_empresa` (`id_empresa`)
+  KEY `id_empresa` (`id_empresa`),
+  KEY `id_plantilla` (`id_plantilla`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -184,7 +199,8 @@ ALTER TABLE `datos_personas`
   ADD CONSTRAINT `datos_personas_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
 
 ALTER TABLE `reservas_hotel`
-  ADD CONSTRAINT `reservas_hotel_ibfk_1` FOREIGN KEY (`id_empresa`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE;
+  ADD CONSTRAINT `reservas_hotel_ibfk_1` FOREIGN KEY (`id_empresa`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `reservas_hotel_ibfk_2` FOREIGN KEY (`id_plantilla`) REFERENCES `plantillas` (`id`) ON DELETE SET NULL;
 
 ALTER TABLE `actividades`
   ADD CONSTRAINT `actividades_ibfk_1` FOREIGN KEY (`id_reserva`) REFERENCES `reservas_hotel` (`id`) ON DELETE CASCADE;

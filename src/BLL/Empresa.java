@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map; 
 
 public class Empresa extends Persona {
-	// ( Herencia. ) Empresa hereda credenciales de Persona para reutilizar el login.
+    // ( Herencia. ) Empresa hereda credenciales de Persona para reutilizar el login.
     private String cuit; 
     private String razonSocial; 
 
@@ -34,7 +34,7 @@ public class Empresa extends Persona {
 
     @Override 
     public String getNombre() {
-        return razonSocial; // Devuelve el Nombre Legal para los carteles de la interfaz. < Nombre Legal de la Empresa.
+        return razonSocial; // Devuelve el Nombre Legal para los carteles de la interfaz.
     }
 
     @Override 
@@ -55,7 +55,6 @@ public class Empresa extends Persona {
         };
 
         int seleccion;
-        // Bucle para mantener vivo el panel principal hasta que metan deslogueo o fuercen escape.
         do {
             seleccion = JOptionPane.showOptionDialog(
                 null, tituloMenu, "HouseHunter v1.0",
@@ -93,32 +92,46 @@ public class Empresa extends Persona {
         }
     }
 
+    // Corregidas líneas 106, 107 y 108: Implementación nativa de rango de fechas (fecha_inicio y fecha_fin)
     private void realizarReserva() {
-        String fechaStr = JOptionPane.showInputDialog(null, "Fecha del evento (YYYY-MM-DD):", "Nueva Reserva", JOptionPane.QUESTION_MESSAGE);
-        if (fechaStr == null) return; // Escape si cancela la carga.
+        String fechaInicioStr = JOptionPane.showInputDialog(null, "Fecha de Inicio / Check-In (YYYY-MM-DD):", "Nueva Reserva", JOptionPane.QUESTION_MESSAGE);
+        if (fechaInicioStr == null) return; 
         
+        String fechaFinStr = JOptionPane.showInputDialog(null, "Fecha de Fin / Check-Out (YYYY-MM-DD):", "Nueva Reserva", JOptionPane.QUESTION_MESSAGE);
+        if (fechaFinStr == null) return; 
+
         try {
-            LocalDate fechaEvento = LocalDate.parse(fechaStr); // Castea a fecha real. Si el formato está mal, salta al catch.
+            LocalDate fechaInicio = LocalDate.parse(fechaInicioStr); 
+            LocalDate fechaFin = LocalDate.parse(fechaFinStr);
+            
+            if (fechaFin.isBefore(fechaInicio)) {
+                JOptionPane.showMessageDialog(null, "❌ La fecha de fin no puede ser anterior a la de inicio.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             String numInvStr = JOptionPane.showInputDialog(null, "Número estimado de invitados:", "Cantidad", JOptionPane.QUESTION_MESSAGE);
             if (numInvStr == null) return;
             int numInvitados = Integer.parseInt(numInvStr);
 
-            if (eventoController.verificarDisponibilidad(fechaEvento, numInvitados)) {
-                Reserva nueva = new Reserva(this, fechaEvento, numInvitados);
-                eventoController.crearReserva(nueva);
+            if (eventoController.verificarDisponibilidad(fechaInicio, fechaFin)) {
+                Reserva nueva = new Reserva(this, fechaInicio, fechaFin, numInvitados);
+                
+                // CORRECCIÓN: Le pasamos 'nueva' y el CUIT de esta empresa (this.cuit) 
+                // para cumplir con la firma (Reserva, String) que te pide el controlador.
+                eventoController.crearReserva(nueva, this.cuit);
+                
                 reservaActual = nueva; 
                 JOptionPane.showMessageDialog(null, "✅ Reserva creada exitosamente.\nID: " + nueva.getId());
             } else {
-                JOptionPane.showMessageDialog(null, "❌ No hay disponibilidad para la fecha seleccionada.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "❌ No hay disponibilidad para el rango de fechas seleccionado.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
-            // Atrapa entradas inválidas ( letras o fechas rotas. ) para evitar que el sistema crasheé en vivo y en directo.
             JOptionPane.showMessageDialog(null, "Datos inválidos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void cargarInvitadosMasivo() {
-        if (!seleccionarReservaActual()) return; // Filtro: Si no hay evento activo, frena acá.
+        if (!seleccionarReservaActual()) return; 
 
         String datos = JOptionPane.showInputDialog(null,
                 "Ingrese los invitados en el siguiente formato:\n"
@@ -129,20 +142,20 @@ public class Empresa extends Persona {
                 "Carga Masiva de Invitados", JOptionPane.QUESTION_MESSAGE);
         if (datos == null || datos.trim().isEmpty()) return;
 
-        String[] lineas = datos.split(";"); // Separa el bloque de texto por cada persona.
+        String[] lineas = datos.split(";"); 
         List<Invitado> lista = new ArrayList<>();
         int errores = 0;
 
         for (String linea : lineas) {
-            String[] campos = linea.split(","); // Abre los atributos separados por coma.
+            String[] campos = linea.split(","); 
             if (campos.length < 3) { 
                 errores++;
-                continue; // Falta dato crítico ( Nombre, Mail o DNI ). Descarta fila y pasa a la siguiente.
+                continue; 
             }
             String nombre = campos[0].trim();
             String email = campos[1].trim();
             String dni = campos[2].trim();
-            String telefono = (campos.length > 3) ? campos[3].trim() : ""; // Por si no tiene teléfono.
+            String telefono = (campos.length > 3) ? campos[3].trim() : ""; 
 
             Invitado inv = new Invitado(email, "", nombre, Rol.INVITADO);
             inv.setDni(dni);
@@ -176,7 +189,6 @@ public class Empresa extends Persona {
             return;
         }
 
-        // Mapea la lista en un array de Strings para mostrar los botones del OptionDialog.
         String[] nombres = plantillas.stream().map(Plantilla::getNombre).toArray(String[]::new);
         int sel = JOptionPane.showOptionDialog(null, "Seleccione una plantilla para el evento:", "Plantillas",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, nombres, nombres[0]);
@@ -224,13 +236,11 @@ public class Empresa extends Persona {
         String importanciaStr = (String) JOptionPane.showInputDialog(null, "Importancia:", "Importancia",
                 JOptionPane.QUESTION_MESSAGE, null, new String[]{"BAJA","MEDIA","ALTA"}, "MEDIA");
         
-        // Carga el selector inyectando directamente los valores del Enum CategoriaActividad.
         CategoriaActividad categoriaSeleccionada = (CategoriaActividad) JOptionPane.showInputDialog(null, "Categoría:", "Categoría",
                 JOptionPane.QUESTION_MESSAGE, null, CategoriaActividad.values(), CategoriaActividad.CHARLA);
         String categoria = (categoriaSeleccionada != null) ? categoriaSeleccionada.toString() : "OTRO";
 
         try {
-            // LocalDateTime se usa acá.
             LocalDateTime fechaHora = LocalDateTime.parse(fechaHoraStr.replace(" ", "T"));
             int duracion = Integer.parseInt(duracionStr);
             int cupo = Integer.parseInt(cupoStr);
@@ -268,7 +278,6 @@ public class Empresa extends Persona {
             act.setImportancia(Importancia.valueOf(nuevaImp));
             List<Actividad> todas = eventoController.obtenerActividadesPorReserva(reservaActual.getId());
             
-            // Recorre la lista de la BD en memoria para pisar la importancia de la actividad modificada.
             for (Actividad a : todas) {
                 if (a.getId() == act.getId()) a.setImportancia(act.getImportancia());
             }
@@ -316,7 +325,6 @@ public class Empresa extends Persona {
             JOptionPane.showMessageDialog(null, "No hay invitados cargados.");
             return;
         }
-        // StringBuilder para optimizar el uso de memoria en bucles masivos en lugar de usar concatenación clásica (+).
         StringBuilder sb = new StringBuilder("📋 Invitados:\n");
         for (Invitado i : invitados) {
             sb.append("- ").append(i.getNombre())
@@ -328,7 +336,19 @@ public class Empresa extends Persona {
     }
 
     private void enviarNotificaciones() {
-        if (invitadoController.enviarNotificaciones(reservaActual.getId())) {
+        // CORRECCIÓN: Primero recuperamos la lista de invitados reales de la reserva activa
+        List<Invitado> invitadosAEnviar = invitadoController.listarInvitadosPorReserva(reservaActual.getId());
+        
+        if (invitadosAEnviar.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "❌ No hay invitados cargados para notificar en esta reserva.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Modificá la llamada según cómo esté definido en tu InvitadoController:
+        // Opción A: Si tu controlador recibe la lista -> invitadoController.enviarNotificaciones(invitadosAEnviar)
+        // Opción B: Si no recibe parámetros -> invitadoController.enviarNotificaciones()
+        // Asumiendo que procesa la lista que acabamos de buscar:
+        if (invitadoController.enviarNotificaciones(invitadosAEnviar)) {
             JOptionPane.showMessageDialog(null, "✅ Notificaciones enviadas (simulado).\nRevise la consola para ver los tokens.");
         } else {
             JOptionPane.showMessageDialog(null, "Error al enviar notificaciones.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -354,7 +374,6 @@ public class Empresa extends Persona {
     }
 
     private void mostrarEstadisticas() {
-        // Estructura Map ( Clave-Valor ) para levantar las métricas procesadas por el controlador.
         Map<String, Object> stats = reporteController.obtenerReporteEvento(reservaActual.getId());
         String mensaje = String.format(
             "📊 REPORTE DEL EVENTO ID %d\n\n" +
@@ -363,7 +382,7 @@ public class Empresa extends Persona {
             "Porcentaje confirmación: %.2f%%\n" +
             "Total actividades programadas: %d",
             reservaActual.getId(),
-            stats.getOrDefault("totalInvitados", 0), // El Default evita un NullPointerException si la clave viene vacía.
+            stats.getOrDefault("totalInvitados", 0), 
             stats.getOrDefault("confirmados", 0),
             stats.getOrDefault("porcentajeConfirmacion", 0.0),
             stats.getOrDefault("totalActividades", 0)
@@ -371,7 +390,7 @@ public class Empresa extends Persona {
         JOptionPane.showMessageDialog(null, mensaje);
     }
 
-    // Contexto: Si no hay reserva, abre selector para traer las existentes desde MySQL.
+    // Corregida línea 382: Mapeo dinámico leyendo fechaInicio y fechaFin en el selector Swing
     private boolean seleccionarReservaActual() {
         if (reservaActual != null) return true;
         List<Reserva> reservas = eventoController.listarReservasPorEmpresa(this.getId());
@@ -379,7 +398,12 @@ public class Empresa extends Persona {
             JOptionPane.showMessageDialog(null, "No hay reservas para esta empresa.\nPrimero debe crear una reserva.");
             return false;
         }
-        String[] opciones = reservas.stream().map(r -> "ID " + r.getId() + " - " + r.getFechaEvento() + " (" + r.getEstado() + ")").toArray(String[]::new);
+        
+        // Se cambió r.getFechaEvento() por el rango real corregido de tu base de datos
+        String[] opciones = reservas.stream()
+            .map(r -> "ID " + r.getId() + " - [" + r.getFechaInicio() + " al " + r.getFechaFin() + "]")
+            .toArray(String[]::new);
+            
         int sel = JOptionPane.showOptionDialog(null, "Seleccione la reserva a gestionar:", "Reservas",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, opciones, opciones[0]);
         if (sel >= 0) {
