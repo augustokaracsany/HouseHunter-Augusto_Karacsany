@@ -162,6 +162,7 @@ CREATE TABLE `lista_invitados_previa` (
   `apellido` varchar(100) NOT NULL,
   `celular` varchar(20) NOT NULL,
   `dni_companero` varchar(15) NOT NULL,
+  `token_acceso` varchar(255) DEFAULT NULL, -- <-- AGREGUÉ ESTA LÍNEA - Augusto. 
   PRIMARY KEY (`id`),
   UNIQUE KEY `unico_dni_reserva` (`id_reserva`,`dni`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
