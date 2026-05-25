@@ -1,19 +1,19 @@
-package DLL;
+package DLL; // Capa de Acceso a Datos / Controladores de Flujo. < DLL.
 
-// Este Controller lo dejamos olvidado muy fuerte hasta ahora.
 import BLL.Persona;
-import Repository.Hashing; 
+import Repository.Hashing; // Ajustar importación según dónde esté tu clase Hashing
 import Repository.UsuariosController;
 
 public class AutenticacionController {
-    private static AutenticacionController instance;
-    private final UsuariosController usuarioRepository;
+    private static AutenticacionController instance; // Instancia única global (Singleton).
+    private final UsuariosController usuarioRepository; // Conector directo a la capa de datos.
 
+    // Constructor privado: bloquea el 'new' desde afuera para evitar múltiples gestores de sesión.
     private AutenticacionController() {
-        // Inyectamos el repositorio de usuarios para poder delegarle las consultas a la BD.
         this.usuarioRepository = new UsuariosController();
     }
 
+    // Punto de acceso único para invocar la autenticación desde el Main.
     public static AutenticacionController getInstance() {
         if (instance == null) {
             instance = new AutenticacionController();
@@ -21,25 +21,26 @@ public class AutenticacionController {
         return instance;
     }
 
-     // Coordina el proceso de Login. Solicita los datos al repositorio.
-     // Ejecuta la validación lógica de seguridad ( La Verificación del hash ).
-     
+    /**
+     * Coordina el proceso de Login. Solicita los datos al repositorio
+     * y ejecuta la validación lógica de seguridad (verificación del hash).
+     */
     public Persona iniciarSesion(String email, String password) {
-        // 1. Delegamos la búsqueda física a la capa de datos.
+        // 1. Delegamos la búsqueda física a la capa de persistencia (MySQL)
         Persona usuarioBD = usuarioRepository.obtenerUsuarioPorEmail(email);
 
+        // If de control: si el mail no existe en la base de datos, frena acá.
         if (usuarioBD == null) {
             System.out.println("❌ Autenticación: No se encontró ningún usuario con el email: " + email);
             return null;
         }
 
-        // 2. La lógica de negocio de seguridad se ejecuta en el controlador de Autenticación.
-        // 'usuarioBD.getPassword()' contiene el hash recuperado de MySQL.
-        if (Hashing.verificar(password, usuarioBD.getPassword())) { // < FIXeado. - Augusto.
-            System.out.println("ℹ️ Autenticación: Login exitoso para: " + email);
-            return usuarioBD; // Retornamos la instancia polimórfica lista para usar.
+        // 2. Ejecuta la verificación del hash utilizando el método Getter público de Persona
+        if (Hashing.verificar(password, usuarioBD.getPassword())) {
+            System.out.println("ℹ️ Autenticación: Login exitoso para el usuario: " + email);
+            return usuarioBD; // Retorna la instancia polimórfica (Empresa, Administrador, Invitado).
         } else {
-            System.out.println("❌ Autenticación: Contraseña incorrecta para: " + email);
+            System.out.println("❌ Autenticación: Contraseña incorrecta para el usuario: " + email);
             return null;
         }
     }
