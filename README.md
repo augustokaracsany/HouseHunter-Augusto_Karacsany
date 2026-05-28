@@ -25,7 +25,7 @@ El proyecto está construido bajo una arquitectura limpia en **capas desacoplada
 ## Estado Actual del Desarrollo
 
 ### Base de Datos e Infraestructura Core
-* **Conexión Centralizada:** Implementación del patrón *Singleton* en `ConexionController` para una gestión eficiente y segura del pool de conexiones a MySQL.
+* **Conexión Centralizada:** Implementation del patrón *Singleton* en `ConexionController` para una gestión eficiente y segura del pool de conexiones a MySQL.
 * **Esquema Relacional (`househunter.sql`):** Estructura relacional sólida con restricciones de integridad referencial (`FOREIGN KEY`) y borrados en cascada (`ON DELETE CASCADE`) para mantener la consistencia de los datos en transacciones concurrentes.
 
 ### Módulo de Autenticación & Seguridad
@@ -44,67 +44,73 @@ El proyecto está construido bajo una arquitectura limpia en **capas desacoplada
 * **Módulo de Analítica Avanzado:** El `ReporteController` unifica mediante estructuras de datos clave-valor (`Map`) consultas paralelas para calcular totales esperados, confirmados reales en base a ocupación de camas, y porcentajes de confirmación con truncamiento decimal limpio evitando excepciones aritméticas de división por cero.
 * **Gamaficación de Premios:** El sistema audita de forma lineal las asistencias perfectas a actividades catalogadas bajo la etiqueta de importancia `ALTA`. Al cumplirse la condición, el motor habilita al usuario como candidato apto para la obtención de premios al final de la jornada.
 
+---
+
 ## 🗺️ Estructura del Árbol de Navegación (Flujo de UI)
 
 A continuación se detalla el mapa de navegación jerárquico del sistema, mapeado directamente desde los componentes dinámicos de la interfaz gráfica (`Swing`):
 
 ```text
 [ ARRANQUE DE LA APLICACIÓN ] (GUI.Main)
-  │
-  └── 👤 Menú Principal (HouseHunter Principal)
-        ├── 📝 Registrarse (Creación de nuevos usuarios con rol básico)
-        ├── ➡️ Iniciar Sesión (Validación y bifurcación según rol asignado)
-        │     │
-        │     ─ 🛡️ 1. ROL: ADMINISTRADOR ──► [ PANEL DE ADMINISTRADOR ] (Panel de Recepción)
-              │                            │
-              │                            ├── 🛏️ [ BOTÓN: RECEPCIÓN ] (Módulo de Recepción)
-              │                            │     ├── Registrar Check-In (Validación y asignación física)
-              │                            │     ├── Monitorear Habitaciones (Control de estados: Libre ➔ Half ➔ Completa)
-              │                            │     └── Volver (Regresa al Panel de Administrador)
-              │                            │
-              │                            ├── 🎯 [ BOTÓN: ACTIVIDADES ] (Control de Eventos)
-              │                            │     ├── Monitorear actividades (Visualización del itinerario global)
-              │                            │     ├── Visualizar cronograma (Filtros por jornada)
-              │                            │     ├── Actualizar estado (Toggle de ejecución en salas)
-              │                            │     ├── Entregar premio (Motor de sorteo basado en asistencia ALTA)
-              │                            │     └── Volver (Regresa al Panel de Administrador)
-              │                            │
-              │                            ├── 📊 [ BOTÓN: REPORTES ] (Módulo de Reportes Admin)
-              │                            │     ├── Generar reporte de evento (Auditoría cruzada de métricas)
-              │                            │     └── Volver (Regresa al Panel de Administrador)
-              │                            │
-              │                            └── ❌ [ BOTÓN: CERRAR SESIÓN ] (Retorno al Login Principal)
-              │
-        │     │
-        │     ├── 🏢 2. ROL: EMPRESA ──► [ PANEL DE EMPRESA ] (Manejo de Sesión Hidratada)
-        │     │                            │
-        │     │                            ├── 📂 [ BOTÓN: GESTIÓN DE EVENTO ] (Submenú Eventos)
-        │     │                            │     ├── Realizar Reserva (Confirmación de fechas y asistentes)
-        │     │                            │     ├── Cargar Invitados (Volcado manual a persistencia)
-        │     │                            │     ├── Seleccionar Plantilla (src/img/ assets visuales)
-        │     │                            │     └── Volver (Regresa al Panel de Empresa)
-        │     │                            │
-        │     │                            ├── 📅 [ BOTÓN: PLANIFICACIÓN ] (Submenú Planificación)
-        │     │                            │     ├── Crear actividad (Especificar categoría y hora)
-        │     │                            │     ├── Asignar importancia (ALTA / MEDIA / BAJA)
-        │     │                            │     ├── Guardar cronograma (Confirmar transacción atómica)
-        │     │                            │     └── Volver (Regresa al Panel de Empresa)
-        │     │                            │
-        │     │                            ├── 📧 [ BOTÓN: INVITACIONES ] (Submenú Invitaciones)
-        │     │                            │     ├── Importar nómina previa (lista_invitados_previa)
-        │     │                            │     ├── Enviar notificaciones (Token único sim/envío)
-        │     │                            │     └── Volver (Regresa al Panel de Empresa)
-        │     │                            │
-        │     │                            ├── 📊 [ BOTÓN: REPORTES ] (Submenú Reportes)
-        │     │                            │     ├── Ver estadísticas (Lanzamiento del JOptionPane analítico)
-        │     │                            │     ├── Exportar (simular) (Volcado local de métricas)
-        │     │                            │     └── Volver (Regresa al Panel de Empresa)
-        │     │                            │
-        │     │                            └── ❌ [ BOTÓN: CERRAR SESIÓN ] (Retorno limpio al Login)
-        │     │
-        │     └── 👥 3. ROL: INVITADO ──► [ PANEL DE INVITADO ] (Vistas reducidas optimizadas)
-        │                                  ├── 📅 Consultar cronograma del evento acoplado
-        │                                  ├── 🔑 Ver asignación de habitación y compañero de cuarto
-        │                                  └── 🎟️ Estado de vouchers activos para sorteo de premios
-        │
-        └── ❌ Botón Salir (Cierre de la JVM y del pool ConexionController)
+ │
+ └── 👤 Menú Principal (HouseHunter Principal)
+      ├── 📝 Registrarse (Creación de nuevos usuarios con rol básico)
+      ├── ➡️ Iniciar Sesión (Validación y bifurcación según rol asignado)
+      │     │
+      │     ├─ 🛡️ 1. ROL: ADMINISTRADOR ──► [ PANEL DE ADMINISTRADOR ] (Panel de Recepción)
+      │     │                                │
+      │     │                                ├── 🛏️ [ BOTÓN: RECEPCIÓN ] (Módulo de Recepción)
+      │     │                                │     ├── Registrar Check-In (Validación y asignación física)
+      │     │                                │     ├── Monitorear Habitaciones (Control de estados: Libre ➔ Half ➔ Completa)
+      │     │                                │     └── Volver (Regresa al Panel de Administrador)
+      │     │                                │
+      │     │                                ├── 🎯 [ BOTÓN: ACTIVIDADES ] (Control de Eventos)
+      │     │                                │     ├── Monitorear actividades (Visualización del itinerario global)
+      │     │                                │     ├── Visualizar cronograma (Filtros por jornada)
+      │     │                                │     ├── Actualizar estado (Toggle de ejecución en salas)
+      │     │                                │     ├── Entregar premio (Motor de sorteo basado en asistencia ALTA)
+      │     │                                │     └── Volver (Regresa al Panel de Administrador)
+      │     │                                │
+      │     │                                ├── 📊 [ BOTÓN: REPORTES ] (Módulo de Reportes Admin)
+      │     │                                │     ├── Generar reporte de evento (Auditoría cruzada de métricas)
+      │     │                                │     └── Volver (Regresa al Panel de Administrador)
+      │     │                                │
+      │     │                                └── ❌ [ BOTÓN: CERRAR SESIÓN ] (Retorno al Login Principal)
+      │     │
+      │     ├── 🏢 2. ROL: EMPRESA ──► [ PANEL DE EMPRESA ] (Manejo de Sesión Hidratada)
+      │     │                            │
+      │     │                            ├── 📂 [ BOTÓN: GESTIÓN DE EVENTO ] (Submenú Eventos)
+      │     │                            │     ├── Realizar Reserva (Confirmación de fechas y asistentes)
+      │     │                            │     ├── Cargar Invitados (Volcado manual a persistencia)
+      │     │                            │     ├── Seleccionar Plantilla (src/img/ assets visuales)
+      │     │                            │     └── Volver (Regresa al Panel de Empresa)
+      │     │                            │
+      │     │                            ├── 📅 [ BOTÓN: PLANIFICACIÓN ] (Submenú Planificación)
+      │     │                            │     ├── Crear actividad (Especificar categoría, combo de opciones y hora)
+      │     │                            │     ├── Asignar importancia (ALTA / MEDIA / BAJA)
+      │     │                            │     ├── Guardar cronograma (Confirmar transacción atómica)
+      │     │                            │     └── Volver (Regresa al Panel de Empresa)
+      │     │                            │
+      │     │                            ├── 📧 [ BOTÓN: INVITACIONES ] (Submenú Invitaciones)
+      │     │                            │     ├── Importar nómina previa (lista_invitados_previa)
+      │     │                            │     ├── Enviar notificaciones (Token único sim/envío)
+      │     │                            │     └── Volver (Regresa al Panel de Empresa)
+      │     │                            │
+      │     │                            ├── 📊 [ BOTÓN: REPORTES ] (Submenú Reportes)
+      │     │                            │     ├── Ver estadísticas (Lanzamiento del JOptionPane analítico)
+      │     │                            │     ├── Exportar (simular) (Volcado local de métricas)
+      │     │                            │     └── Volver (Regresa al Panel de Empresa)
+      │     │                            │
+      │     │                            └── ❌ [ BOTÓN: CERRAR SESIÓN ] (Retorno limpio al Login)
+      │     │
+      │     └── 👥 3. ROL: INVITADO ──► [ PANEL DE INVITADO ] (Vistas de autogestión de huéspedes)
+      │                                  │
+      │                                  ├── 📅 [ BOTÓN ] Ver cronograma completo (Itinerario estructurado)
+      │                                  ├── ✔️ [ BOTÓN ] Confirmar mi asistencia (Registro dinámico)
+      │                                  ├── 🎯 [ BOTÓN ] Explorar actividades (Mapeo relacional de opciones)
+      │                                  ├── 🔍 [ BOTÓN ] Ver detalle de una actividad (Metadatos de sala)
+      │                                  ├── 🛏️ [ BOTÓN ] Consultar mi habitación (Mapeo de cuarto y compañero)
+      │                                  ├── 🎟️ [ BOTÓN ] Obtener voucher (Cupones activos y gamificación de premios)
+      │                                  └── ❌ [ BOTÓN ] Cerrar Sesión (Desacople de sesión y retorno)
+      │
+      └── ❌ Botón Salir
