@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
 
-
  // Centraliza las consultas SQL y las modificaciones sobre las actividades del hotel.
  // ( Singleton. )
 
@@ -52,10 +51,10 @@ public class ActividadController {
                     String importancia = rs.getString("importancia");
                     String categoria = rs.getString("categoria");
 
-                    // Lógica de renderizado condicional según el nivel de prioridad del evento.
+                    // AJUSTADO: Lógica de renderizado condicional con ENUMs en mayúsculas
                     String colorImportancia = "gray";
-                    if (importancia.equalsIgnoreCase("Alta")) colorImportancia = "red";
-                    else if (importancia.equalsIgnoreCase("Media")) colorImportancia = "orange";
+                    if (importancia.equalsIgnoreCase("ALTA")) colorImportancia = "red";
+                    else if (importancia.equalsIgnoreCase("MEDIA")) colorImportancia = "orange";
 
                     cronograma.append("<p style='margin-bottom: 2px;'><b>⏱️ ").append(hora).append(" hs</b> - ").append(nombre).append("</p>");
                     cronograma.append("<p style='margin-left: 15px; color: #555; margin-top: 0px;'><i>").append(desc != null ? desc : "Sin descripción").append("</i><br>");
@@ -146,16 +145,39 @@ public class ActividadController {
     // Inserción directa de un nuevo registro en la tabla 'actividades'.
     public boolean guardarActividad(int idReserva, String nombre, String desc, String importancia, String categoria, String hora) {
         String sql = "INSERT INTO actividades (id_reserva, nombre, descripcion, hora_actividad, importancia, categoria) VALUES (?, ?, ?, ?, ?, ?)";
+        
+        // --- FORMATEO EXCLUSIVO FULL MAYÚSCULAS PARA MATCH CON ENUMS MODIFICADOS ---
+        
+        // 1. Importancia va FULL MAYÚSCULAS ('ALTA', 'MEDIA', 'BAJA')
+        String importanciaFormateada = "MEDIA";
+        if (importancia != null && !importancia.trim().isEmpty()) {
+            importanciaFormateada = importancia.trim().toUpperCase();
+        }
+        
+     // 2. CORREGIDO: Categoría se normaliza full mayúsculas y arregla desajustes de la UI
+        String categoriaFormateada = "OTROS";
+        if (categoria != null && !categoria.trim().isEmpty()) {
+            String limpia = categoria.trim().toUpperCase();
+            
+            // Atajamos los singulares/variantes por si quedaron configurados en componentes viejos
+            if (limpia.equals("CHARLA")) limpia = "CHARLAS";
+            if (limpia.equals("RECREATIVA") || limpia.equals("RECREACIÓN")) limpia = "RECREACION";
+            if (limpia.equals("OTRO")) limpia = "OTROS";
+            
+            categoriaFormateada = limpia;
+        }
         Connection con = ConexionController.getInstance().getConnection();
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, idReserva);
             ps.setString(2, nombre);
             ps.setString(3, desc);
-            ps.setString(4, hora); // Recibe el formato HH:MM como String y la BD lo castea implícitamente a TIME.
-            ps.setString(5, importancia);
-            ps.setString(6, categoria);
-            return ps.executeUpdate() > 0; // Retorna true si la fila fue afectada con éxito en el motor de almacenamiento.
+            ps.setString(4, hora); // El string formateado HH:mm:ss
+            ps.setString(5, importanciaFormateada);
+            ps.setString(6, categoriaFormateada);
+            
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
+            System.err.println("Error en transacción de guardado de cronograma: " + e.getMessage());
             return false;
         }
     }

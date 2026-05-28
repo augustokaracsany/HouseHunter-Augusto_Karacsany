@@ -7,7 +7,8 @@ import DLL.ReporteController;
 import javax.swing.ImageIcon; 
 import javax.swing.JOptionPane; 
 import java.time.LocalDate; 
-import java.time.LocalDateTime; 
+import java.time.LocalTime; // Cambiado a LocalTime para ajustarse a la BD
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList; 
 import java.util.List; 
 import java.util.Map; 
@@ -223,37 +224,42 @@ public class Empresa extends Persona {
     private void crearActividad() {
         String nombre = JOptionPane.showInputDialog("Nombre de la actividad:");
         if (nombre == null) return;
-        String fechaHoraStr = JOptionPane.showInputDialog("Fecha y hora (YYYY-MM-DD HH:MM):");
-        if (fechaHoraStr == null) return;
-        String duracionStr = JOptionPane.showInputDialog("Duración (minutos):");
-        if (duracionStr == null) return;
-        String cupoStr = JOptionPane.showInputDialog("Cupo máximo:");
-        if (cupoStr == null) return;
+        
+        // CORREGIDO: Pedimos solo la hora ya que la columna en la BD es de tipo TIME
+        String horaStr = JOptionPane.showInputDialog("Hora de la actividad (HH:MM o HH:MM:SS):");
+        if (horaStr == null) return;
+        
+        String desc = JOptionPane.showInputDialog("Descripción de la actividad:");
+        if (desc == null) desc = ""; // Evitamos nulos molestos
         
         String importanciaStr = (String) JOptionPane.showInputDialog(null, "Importancia:", "Importancia",
                 JOptionPane.QUESTION_MESSAGE, null, new String[]{"BAJA","MEDIA","ALTA"}, "MEDIA");
+        if (importanciaStr == null) return;
         
         CategoriaActividad categoriaSeleccionada = (CategoriaActividad) JOptionPane.showInputDialog(null, "Categoría:", "Categoría",
-                JOptionPane.QUESTION_MESSAGE, null, CategoriaActividad.values(), CategoriaActividad.CHARLA);
-        String categoria = (categoriaSeleccionada != null) ? categoriaSeleccionada.toString() : "OTRO";
+                JOptionPane.QUESTION_MESSAGE, null, CategoriaActividad.values(), CategoriaActividad.CHARLAS);
+        String categoria = (categoriaSeleccionada != null) ? categoriaSeleccionada.toString() : "OTROS";
 
         try {
-            LocalDateTime fechaHora = LocalDateTime.parse(fechaHoraStr.replace(" ", "T"));
-            int duracion = Integer.parseInt(duracionStr);
-            int cupo = Integer.parseInt(cupoStr);
-            
-            Actividad act = new Actividad(nombre, fechaHora, duracion, cupo, Importancia.valueOf(importanciaStr), categoria);
-            act.setReserva(reservaActual);
-            List<Actividad> lista = new ArrayList<>();
-            lista.add(act);
-            
-            if (eventoController.guardarCronograma(reservaActual.getId(), lista)) {
-                JOptionPane.showMessageDialog(null, "Actividad agregada al cronograma.");
+            // Normalizamos el string de la hora para asegurarnos de que MySQL lo reciba como HH:MM:SS
+            String[] partes = horaStr.trim().split(":");
+            String horaFormateada = "";
+            if (partes.length == 2) {
+                horaFormateada = partes[0] + ":" + partes[1] + ":00";
+            } else if (partes.length == 3) {
+                horaFormateada = horaStr.trim();
             } else {
-                JOptionPane.showMessageDialog(null, "Error al guardar actividad.", "Error", JOptionPane.ERROR_MESSAGE);
+                throw new Exception("Formato de hora inválido. Use HH:MM");
+            }
+            
+            // CORREGIDO: Usamos el actividadController que mapea directo a la tabla relacional 'actividades'
+            if (actividadController.guardarActividad(reservaActual.getId(), nombre, desc, importanciaStr, categoria, horaFormateada)) {
+                JOptionPane.showMessageDialog(null, "✅ Actividad agregada al cronograma con éxito.");
+            } else {
+                JOptionPane.showMessageDialog(null, "❌ Error al insertar la actividad en la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Error en datos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "❌ Error en datos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
