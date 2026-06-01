@@ -54,13 +54,14 @@ public class InvitadoController {
                 && inv.getDni() != null && !inv.getDni().trim().isEmpty();
     }
 
-    // CAMBIADO: Ahora genera un PIN numérico de 4 dígitos fácil de tipear
+    // CAMBIADO: Ahora genera un PIN numérico de 4 dígitos fácil de tipear. 
+    // Faltaba cambiar el placeholder del PIN. < ARREGLADO.
     public String generarTokenUnico() {
         int pin = 1000 + (int)(Math.random() * 9000);
         return String.valueOf(pin);
     }
 
-    // MODIFICADO: Ahora el listado levanta el token real de la base de datos si existe
+    // MODIFICADO: Ahora el listado levanta el token real de la base de datos si existe.
     public List<Invitado> listarInvitadosPorReserva(int idReserva) {
         List<Invitado> lista = new ArrayList<>();
         String sql = "SELECT id, nombre, apellido, dni, celular, token_acceso FROM lista_invitados_previa WHERE id_reserva = ?";
@@ -76,7 +77,7 @@ public class InvitadoController {
                             rs.getString("apellido"),
                             rs.getString("dni"),
                             rs.getString("celular"),
-                            rs.getString("token_acceso"), // <--- Mapea el token real de la BD
+                            rs.getString("token_acceso"), // < Mapea el token real de la BD
                             false
                     );
                     lista.add(inv);
@@ -87,8 +88,9 @@ public class InvitadoController {
         }
         return lista;
     }
-
-    // REHECHO: Ahora busca el PIN de 4 dígitos directamente en tu columna física
+    
+    // Feat.
+    // REHECHO: Ahora busca el PIN de 4 dígitos directamente en la columna física correspondiente.
     public Invitado validarToken(String token) {
         String sql = "SELECT lip.*, rh.fecha_inicio, rh.fecha_fin " +
                      "FROM lista_invitados_previa lip " +
@@ -99,10 +101,10 @@ public class InvitadoController {
             ps.setString(1, token);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    // Instanciamos el invitado con la info de la lista previa
+                    // Instanciamos el invitado con la info de la lista previa.
                     Invitado inv = new Invitado(
                         rs.getInt("id"), 
-                        "", // Email de la lista previa si no tiene
+                        "", // Email de la lista previa si no tiene.
                         rs.getString("nombre"),
                         rs.getString("apellido"), 
                         rs.getString("dni"), 
@@ -150,7 +152,7 @@ public class InvitadoController {
         return null;
     }
 
-    // PERSISTENTE: Ahora genera los PINs de 4 dígitos y los guarda en MySQL
+    // PERSISTENTE: Ahora genera los PINs de 4 dígitos y los guarda en MySQL.
     public boolean enviarNotificaciones(List<Invitado> listaInvitados) {
         if (listaInvitados == null || listaInvitados.isEmpty()) {
             return false;
@@ -164,7 +166,7 @@ public class InvitadoController {
             
             try (PreparedStatement ps = con.prepareStatement(sqlUpdate)) {
                 for (Invitado inv : listaInvitados) {
-                    String tokenPin = generarTokenUnico(); // Genera el PIN de 4 números
+                    String tokenPin = generarTokenUnico(); // Genera el PIN de 4 números.
                     
                     ps.setString(1, tokenPin);
                     ps.setInt(2, inv.getId());

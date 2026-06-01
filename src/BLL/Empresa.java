@@ -5,7 +5,7 @@ import GUI.EmpresaMenu;
 public class Empresa extends Persona {
     private String cuit; 
     private String razonSocial; 
-    private Reserva reservaActual; // Memoria operativa temporal
+    private Reserva reservaActual; // Memoria de la Reserva actual.
     
     public Empresa(String email, String password, String cuit, String razonSocial, Rol rol) {
         super(email, password, rol); 
@@ -20,11 +20,12 @@ public class Empresa extends Persona {
 
     @Override 
     public void mostrarMenu() {
-        // Delegamos por completo el control visual a la nueva clase Vista
+        // Delegamos por completo el control visual a la nueva clase EmpresaMenu.java.
         new EmpresaMenu(this).mostrarMenuPrincipal();
     }
 
-    // Encapsulamiento (Getters y Setters)
+    // Encapsulamiento. 
+    // ( Getters y Setters. )
     public String getCuit() { return cuit; }
     public void setCuit(String cuit) { this.cuit = cuit; }
     public String getRazonSocial() { return razonSocial; }

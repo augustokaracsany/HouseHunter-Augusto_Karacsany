@@ -38,16 +38,16 @@ public class Administrador extends Persona {
         
         // String con etiquetas HTML para meterle estilo, negritas y centrado al texto del panel de recepción.
         String tituloHtml = "<html><body style='width: 300px; text-align: center;'>"
-                          + "<h2>🔑 Panel de Recepción</h2>"
+                          + "<h2>Panel de Recepción</h2>"
                           + "<b>Admin:</b> " + getNombre() 
                           + "<hr>Seleccione un área de gestión:</body></html>";
 
         // Vector de Strings ( Array. ) con los botones físicos que se van a renderizar en el JOptionPane.
         String[] modulos = {
-            "🏨 RECEPCIÓN", 
-            "🎮 ACTIVIDADES", 
-            "📊 REPORTES", 
-            "❌ CERRAR SESIÓN"
+            "RECEPCIÓN", 
+            "ACTIVIDADES", 
+            "REPORTES", 
+            "CERRAR SESIÓN"
         };
 
         int seleccion; // Entero para guardar el botón que el usuario clickeé (0, 1, 2, 3).
@@ -139,19 +139,19 @@ public class Administrador extends Persona {
             String[] actividades = ActividadController.getInstance().obtenerNombresActividades(codEvento.trim());
             
             if (actividades.length == 0) { // Si el array vuelve vacío, es porque el código de evento no existe en MySQL o no tiene actividades asignadas o algo explotó por el camino.
-                JOptionPane.showMessageDialog(null, "❌ No hay actividades cargadas o el evento no existe.", "Aviso", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null, "❌ No hay actividades cargadas o el evento no existe.", "Aviso.", JOptionPane.WARNING_MESSAGE);
                 return; // Corto los inputs de forma segura.
             }
             
             // Menú desplegable para que el admin elija una actividad válida sin chance de errarle al tipeo.
             String actividadSeleccionada = (String) JOptionPane.showInputDialog(
-                null, "Seleccione la actividad a gestionar:", "Monitoreo de Bloques",
+                null, "Seleccione la actividad a gestionar:", "Monitoreo de Bloques.",
                 JOptionPane.PLAIN_MESSAGE, iconoActividades, actividades, actividades[0]
             );
             
             if (actividadSeleccionada != null) { // Si seleccionó una actividad y no canceló...
                 // Pido el DNI del invitado.
-                String dniInvitado = JOptionPane.showInputDialog(null, "Ingrese el DNI del Invitado que asistió:", "Tomar Asistencia", JOptionPane.QUESTION_MESSAGE);
+                String dniInvitado = JOptionPane.showInputDialog(null, "Ingrese el DNI del Invitado que asistió:", "Tomar Asistencia.", JOptionPane.QUESTION_MESSAGE);
                 if (dniInvitado != null && !dniInvitado.trim().isEmpty()) {
                     // Impacto directo en las tablas relacionales mediante el Singleton de Actividades, registrando el presentismo.
                     ActividadController.getInstance().registrarAsistenciaActividad(codEvento.trim(), actividadSeleccionada, dniInvitado.trim());
@@ -159,7 +159,7 @@ public class Administrador extends Persona {
             }
             
         } else if (op == 1) { // Eligió la posición 1 > Visualizar cronograma.
-            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Consultar Cronograma", JOptionPane.QUESTION_MESSAGE);
+            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Consultar Cronograma.", JOptionPane.QUESTION_MESSAGE);
             if (codEvento != null && !codEvento.trim().isEmpty()) {
                 // LLamo al Singleton de Actividades para traerme todo el itinerario formateado en HTML para la interfaz.
                 String agendaHtml = ActividadController.getInstance().obtenerCronogramaEventos(codEvento.trim());
@@ -173,7 +173,7 @@ public class Administrador extends Persona {
     // ( Submenú de Reportes. )
     private void subMenuAdminReportes() {
         ImageIcon iconoReportes = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Reportes.png");
-        String[] opciones = {"Generar reporte de evento", "Volver"};
+        String[] opciones = {"Generar reporte de evento.", "Volver."};
         
         int op = JOptionPane.showOptionDialog(
             null, "<html><body style='width:250px; text-align:center;'><h3>Módulo de Reportes</h3>Seleccione una acción:</body></html>", 
@@ -182,7 +182,7 @@ public class Administrador extends Persona {
         );
         
         if (op == 0) { // Generar reporte estadístico. < Esto estaba en el SRS chicos.
-            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento para consolidar:", "Generar Reporte", JOptionPane.QUESTION_MESSAGE);
+            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento para consolidar:", "Generar Reporte.", JOptionPane.QUESTION_MESSAGE);
             if (codEvento != null && !codEvento.trim().isEmpty()) {
                 // Llamo al EventoController mediante su Singleton para hacer un JOIN.
                 String reporteHtml = EventoController.getInstance().obtenerReporteConsolidadoEvento(codEvento.trim());
@@ -194,17 +194,17 @@ public class Administrador extends Persona {
     // ( Subemnú de Check-In. )
     private void subMenuCheckIn() {
         ImageIcon iconoRecepcion = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Recepcion.png");
-        String[] sub = {"Validar invitado autorizado", "Registrar check-in exitoso", "Volver"};
+        String[] sub = {"Validar invitado autorizado.", "Registrar check-in exitoso.", "Volver."};
         String op;
         
         // Otro bucle do-while para mantener al admin dentro de las operaciones de Check-In hasta que decida presionar "Volver".
         do {
             op = (String)JOptionPane.showInputDialog(
-                null, "Seleccione la operación de check-in:", "Submenú Check-in", 
+                null, "Seleccione la operación de check-in:", "Submenú Check-in.", 
                 JOptionPane.PLAIN_MESSAGE, iconoRecepcion, sub, sub[0]
             );
             
-            if(op == null || op.equals("Volver")) break; // Si cierra la ventana o elije Volver, rompo el bucle con un 'break'.
+            if(op == null || op.equals("Volver.")) break; // Si cierra la ventana o elije Volver, rompo el bucle con un 'break'.
             
             if(op.equals("Validar invitado autorizado")) {
                 String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Validación Previa", JOptionPane.QUESTION_MESSAGE);

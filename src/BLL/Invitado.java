@@ -60,7 +60,7 @@ public class Invitado extends Persona {
     public void mostrarMenu() {
         if (reserva == null) {
             String token = JOptionPane.showInputDialog(null, 
-                "Para acceder a su evento, ingrese el token que recibió por correo:\n(Ej: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)", 
+                "Para acceder a su evento, ingrese el token que recibió por correo:\n( Ej: XXXX )", 
                 "Validación de acceso.", JOptionPane.QUESTION_MESSAGE);
             if (token == null || token.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(null, "Acceso denegado. No se proporcionó token.", "Error.", JOptionPane.ERROR_MESSAGE);
@@ -84,22 +84,22 @@ public class Invitado extends Persona {
                           + "<h2>Panel del Invitado</h2>"
                           + "<b>Hola, " + getNombre() + "</b><br>"
                           + "<b>Estadía:</b> " + reserva.getFechaInicio() + " al " + reserva.getFechaFin() + "<br>"
-                          + "<b>Estado asistencia:</b> " + (asistenciaConfirmada ? "Confirmada" : "Pendiente")
+                          + "<b>Estado asistencia:</b> " + (asistenciaConfirmada ? "Confirmada." : "Pendiente.")
                           + "<hr>Seleccione una opción:</body></html>";
 
         // Se redujo el menú unificando la lógica de vouchers dentro de sorteos
         String[] opciones = {
-            "Ver cronograma completo",
-            "Confirmar mi asistencia",
-            "Explorar actividades",
-            "Consultar mi habitación",
-            "Participar en sorteos / Premios",
-            "Cerrar sesión"
+            "VER CRONOGRAMA COMPLETO.",
+            "CONFIRMAR MI ASISTENCIA.", // < WIP
+            "EXPLORAR ACTIVIDADES.",
+            "CONSULTAR MI HABITACIÓN.",
+            "PARTICIPAR EN SORTEOS / PREMIOS.",
+            "CERRAR SESIÓN."
         };
 
         int seleccion;
         do {
-            seleccion = JOptionPane.showOptionDialog(null, tituloHtml, "HouseHunter - Invitado",
+            seleccion = JOptionPane.showOptionDialog(null, tituloHtml, "HOUSEHUNTER - INVITADO",
                     JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
                     iconoInvitado, opciones, opciones[0]);
 
@@ -192,13 +192,13 @@ public class Invitado extends Persona {
     // Submenú intermedio para unificar la gestión de sorteos y canje de vouchers
     private void gestionarPremiosYSorteos() {
         String[] opcionesPremios = {
-            "Inscribirse en un Sorteo",
-            "Obtener Voucher de Premio",
-            "Volver al Menú Principal"
+            "Inscribirse en un Sorteo.",
+            "Obtener Voucher de Premio.",
+            "Volver al Menú Principal."
         };
 
         int seleccion = JOptionPane.showOptionDialog(null, "Seleccione la acción que desea realizar:", 
-                "Gestión de Premios y Sorteos", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
+                "Gestión de Premios y Sorteos.", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
                 null, opcionesPremios, opcionesPremios[0]);
 
         if (seleccion == 0) {
@@ -234,7 +234,8 @@ public class Invitado extends Persona {
             }
         }
     }
-
+// Falta hacer el menú de Gestión de Vouchers y Premios en el menú de Empresa.
+    // Esto anda pero sin la parte de ABM en Empresa no tiene sentido. < Debería Funcionar.
     private void obtenerVoucher() {
         List<Premio> premios = premioController.listarPremiosDisponibles();
         if (premios.isEmpty()) {
@@ -257,13 +258,13 @@ public class Invitado extends Persona {
             }
         }
     }
-
+// Error que se muestra si no hay Reservas asociadas de un Huesped/Invitado a Cliente/Empresa.
     private void mostrarErrorSinReserva() {
         JOptionPane.showMessageDialog(null, "No hay información de reserva asociada. Contacte al organizador.", 
                 "Error.", JOptionPane.ERROR_MESSAGE);
     }
 
-    // Getters y Setters básicos
+    // Getters y Setters básicos de Invitado.
     public String getApellido() { return apellido; }
     public void setApellido(String apellido) { this.apellido = apellido; }
     public String getDni() { return dni; }

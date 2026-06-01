@@ -22,10 +22,10 @@ public class AutenticacionController {
         return instance;
     }
 
-    /**
-     * Coordina el proceso de Login. Solicita los datos al repositorio
-     * y ejecuta la validación lógica de seguridad (verificación del hash).
-     */
+    //
+     // Coordina el proceso de Login. Solicita los datos al repositorio
+     // y ejecuta la validación lógica de seguridad (verificación del hash).
+     //
     public Persona iniciarSesion(String email, String password) {
         // 1. Delegamos la búsqueda física a la capa de persistencia (MySQL)
         Persona usuarioBD = usuarioRepository.obtenerUsuarioPorEmail(email);

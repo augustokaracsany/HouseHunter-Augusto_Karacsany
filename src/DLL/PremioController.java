@@ -8,7 +8,7 @@ import java.util.UUID;
 import javax.swing.JOptionPane;
 
 public class PremioController {
-    // Estructura Singleton de Augusto
+    // Estructura Singleton de Augusto.
     private static PremioController instance;
 
     private PremioController() {}
@@ -20,7 +20,7 @@ public class PremioController {
         return instance;
     }
 
-    // ( Sorteo rápido del Administrador )
+    // ( Sorteo rápido del Administrador ).
     // Elige un ganador al azar en caliente basado en la asistencia real registrada.
     public boolean ejecutarSorteoPremio(String codigoEvento, String descripcionPremio) {
         Connection con = ConexionController.getInstance().getConnection();
@@ -77,7 +77,7 @@ public class PremioController {
         }
     }
 
-    // Casos de Uso del Invitado (Branch 'feat/luca')
+    // Casos de Uso del Invitado ( Branch 'feat/luca'. ).
     // ( Listar premios activos. )
     public List<Premio> listarPremiosDisponibles() {
         List<Premio> premios = new ArrayList<>();
@@ -91,8 +91,8 @@ public class PremioController {
             while (rs.next()) {
                 Premio p = new Premio();
                 p.setId(rs.getInt("id"));
-                // Salvamos la diferencia de nombres ( nombre_premio en la BD -> setNombre en el objeto. )
-                p.setNombre(rs.getString("nombre_premio"));
+                // Salvamos la diferencia de nombres ( nombre_premio en la BD -> setNombre en el objeto. ).
+                p.setNombre(rs.getString("nombre_premio")); // < Referencia a datos de Tabla Premios en househunter.sql.
                 p.setDescripcion(rs.getString("descripcion"));
                 p.setCantidadDisponible(rs.getInt("cantidad_disponible"));
                 p.setActivo(rs.getBoolean("activo"));
@@ -158,7 +158,7 @@ public class PremioController {
         return false;
     }
 
-    // ( Obtener o generar el voucher único si salió ganador )
+    // ( Obtener o generar el voucher único si salió ganador. )
     public String obtenerVoucher(int idInvitado, int idPremio) {
         String selectSql = "SELECT voucher, ganador FROM participaciones_premios WHERE id_invitado = ? AND id_premio = ?";
         String updateSql = "UPDATE participaciones_premios SET voucher = ? WHERE id_invitado = ? AND id_premio = ?";
@@ -181,7 +181,7 @@ public class PremioController {
                         return null; // No ganó, no se le da voucher.
                     }
                     
-                    // Si ganó y no lo tiene, se lo generamos de manera atómica
+                    // Si ganó y no lo tiene, se lo generamos de manera atómica.
                     String nuevoVoucher = generarVoucherUnico();
                     try (PreparedStatement psUpd = con.prepareStatement(updateSql)) {
                         psUpd.setString(1, nuevoVoucher);
@@ -203,40 +203,40 @@ public class PremioController {
         return "VCH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    // ( Método de Luca para sortear sobre los postulados - REFACTORIZADO TRANSACCIONAL )
-    public boolean realizarSorteo(int idPremio) {
+    // ( Método de Luca para sortear sobre los postulados - REFACTORIZADO TRANSACCIONAL. )
+    public boolean realizarSorteo(int idPremio) { // < Refactor.
         String checkStock = "SELECT cantidad_disponible FROM premios WHERE id = ?";
         String updateElegibles = "UPDATE participaciones_premios SET elegible = ? WHERE id_premio = ? AND elegible = 0";
         String seleccionarGanador = "SELECT id_invitado FROM participaciones_premios WHERE id_premio = ? AND elegible = 1 AND ganador = 0 ORDER BY RAND() LIMIT 1";
         String marcarGanador = "UPDATE participaciones_premios SET ganador = 1 WHERE id_invitado = ? AND id_premio = ?";
         String reducirStock = "UPDATE premios SET cantidad_disponible = cantidad_disponible - 1 WHERE id = ?";
         
-        // Abrimos una única conexión para controlar toda la operación en bloque continuo
+        // Abrimos una única conexión para controlar toda la operación en bloque continuo.
         try (Connection con = ConexionController.getInstance().getConnection()) {
             
-            // ACTIVAMOS LA TRANSACCIÓN MANUAL
+            // TRANSACCIÓN MANUAL.
             con.setAutoCommit(false); 
 
             try {
-                // 1. Validar Stock disponible
+                // 1. Validar Stock disponible.
                 try (PreparedStatement psCheck = con.prepareStatement(checkStock)) {
                     psCheck.setInt(1, idPremio);
                     try (ResultSet rsStock = psCheck.executeQuery()) {
                         if (rsStock.next() && rsStock.getInt("cantidad_disponible") <= 0) {
-                            con.rollback(); // Cancelamos todo por falta de stock
+                            con.rollback(); // Cancelamos todo por falta de stock.
                             return false;
                         }
                     }
                 }
 
-                // 2. Actualizar en lote el estado de elegibilidad de los participantes
+                // 2. Actualizar en lote el estado de elegibilidad de los participantes.
                 try (PreparedStatement psUpd = con.prepareStatement(updateElegibles)) {
                     psUpd.setBoolean(1, true);
                     psUpd.setInt(2, idPremio);
                     psUpd.executeUpdate();
                 }
 
-                // 3. Seleccionar un ganador aleatorio de la lista
+                // 3. Seleccionar un ganador aleatorio de la lista.
                 int idGanador = 0;
                 try (PreparedStatement psSel = con.prepareStatement(seleccionarGanador)) {
                     psSel.setInt(1, idPremio);
@@ -247,35 +247,35 @@ public class PremioController {
                     }
                 }
 
-                // Si no hay postulados elegibles válidos, salimos limpiamente
+                // Si no hay postulados elegibles válidos, salimos limpiamente.
                 if (idGanador == 0) {
                     con.rollback();
                     return false;
                 }
 
-                // 4. Marcar al ganador seleccionado
+                // 4. Marcar al ganador seleccionado.
                 try (PreparedStatement psGan = con.prepareStatement(marcarGanador)) {
                     psGan.setInt(1, idGanador);
                     psGan.setInt(2, idPremio);
                     psGan.executeUpdate();
                 }
 
-                // 5. Reducir el stock del inventario
+                // 5. Reducir el stock del inventario.
                 try (PreparedStatement psStock = con.prepareStatement(reducirStock)) {
                     psStock.setInt(1, idPremio);
                     psStock.executeUpdate();
                 }
 
-                // SI TODO SALIÓ BIEN, IMPACTAMOS LOS CAMBIOS EN LA BD JUNTOS
+                // SI SALIÓ BIEN, IMPACTAMOS LOS CAMBIOS EN LA BD.
                 con.commit(); 
                 return true;
 
             } catch (SQLException ex) {
-                // Si cualquiera de los 5 pasos falla en runtime, el motor deshace todo automáticamente
+                // Si cualquiera de los 5 pasos falla en runtime, el motor deshace todo automáticamente.
                 con.rollback();
                 throw ex; 
             } finally {
-                // Restauramos el comportamiento por defecto de la conexión
+                // Restauramos el comportamiento por defecto de la conexión.
                 con.setAutoCommit(true);
             }
 
