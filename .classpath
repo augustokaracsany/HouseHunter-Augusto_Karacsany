@@ -8,5 +8,7 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="libs/jbcrypt-0.4.jar"/>
 	<classpathentry kind="lib" path="libs/mysql-connector-java-5.1.13.jar"/>
+	<classpathentry kind="lib" path="libs/jgoodies-common-1.8.1.jar"/>
+	<classpathentry kind="lib" path="libs/jgoodies-forms-1.9.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
