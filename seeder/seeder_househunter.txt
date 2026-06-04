@@ -1,28 +1,84 @@
--- 1. CREAR LA RESERVA DEL EVENTO CORPORATIVO
--- Vinculamos a la empresa Globant (id_empresa = 2) y definimos el código único
-INSERT INTO `reservas_hotel` (`id`, `id_empresa`, `codigo_unico_evento`, `fecha_inicio`, `fecha_fin`, `cantidad_estimada_asistentes`) VALUES
-(1, 2, 'GLOBANT-2026', '2026-06-01', '2026-06-05', 50);
+-- ==============================================================================
+-- EXTENSIÓN Y PUESTA A PUNTO DEL SEEDER - HOUSEHUNTER ( 2026 )
+-- ==============================================================================
 
--- 2. CARGAR LA LISTA DE INVITADOS PREVIA AUTORIZADA
--- Vinculamos a los usuarios que ya tenés creados usando sus DNI reales
-INSERT INTO `lista_invitados_previa` (`id`, `id_reserva`, `dni`, `nombre`, `apellido`, `celular`, `dni_companero`) VALUES
-(1, 1, '44555666', 'Luca', 'Borrelli', '1122334455', '44728397'),
-(2, 1, '44728397', 'Franco', 'Colapinto', '1155667788', '44555666'),
-(3, 1, '12345678', 'Robert', 'Trebor', '1199887766', '0');
+START TRANSACTION;
 
--- 3. CARGAR EL CRONOGRAMA DE ACTIVIDADES PARA EL EVENTO
+-- ------------------------------------------------------------------------------
+-- 1. NUEVOS USUARIOS ( Empresas e Invitados adicionales para pruebas cruzadas. )
+-- ------------------------------------------------------------------------------
+-- Passwords hasheadas con Bcrypt manteniendo consistencia con tu esquema
+INSERT INTO `usuarios` (`id`, `email`, `password`, `rol`, `asistencia_confirmada`, `fecha_confirmacion`) VALUES
+(11, 'rrhh@mercadolibre.com', '$2a$10$wjR9D2Q5HYWx41yfG89LE.PQDi.FF7WE7YNxHw4IMbxD9rH12MurC', 'EMPRESA', 'N', NULL),
+(12, 'corporate@accenture.com', '$2a$10$wjR9D2Q5HYWx41yfG89LE.PQDi.FF7WE7YNxHw4IMbxD9rH12MurC', 'EMPRESA', 'N', NULL),
+(13, 'invitado.tech1@gmail.com', '$2a$10$tHd/HAtSKXNyhggL5TYfYe5HcYWe1gA04cLpY0OJG2FIYxMz7u2bm', 'INVITADO', 'N', NULL),
+(14, 'invitado.tech2@gmail.com', '$2a$10$tHd/HAtSKXNyhggL5TYfYe5HcYWe1gA04cLpY0OJG2FIYxMz7u2bm', 'INVITADO', 'N', NULL),
+(15, 'invitado.tech3@gmail.com', '$2a$10$tHd/HAtSKXNyhggL5TYfYe5HcYWe1gA04cLpY0OJG2FIYxMz7u2bm', 'INVITADO', 'N', NULL);
+
+-- ------------------------------------------------------------------------------
+-- 2. DATOS COMPLEMENTARIOS DE LAS NUEVAS EMPRESAS Y PERSONAS
+-- ------------------------------------------------------------------------------
+INSERT INTO `datos_empresas` (`id_usuario`, `cuit`, `razon_social`) VALUES
+(11, '30-71112223-9', 'MercadoLibre S.R.L.'),
+(12, '30-54443332-8', 'Accenture Argentina S.A.');
+
+INSERT INTO `datos_personas` (`id_usuario`, `dni`, `nombre`, `apellido`, `celular`) VALUES
+(13, '45111222', 'Marcos', 'Galperin', '1133445566'),
+(14, '43999888', 'Clara', 'Mendizabal', '1177889900'),
+(15, '42111555', 'Bautista', 'Agustiz', '1166554433');
+
+-- ------------------------------------------------------------------------------
+-- 3. NUEVAS RESERVAS CORPORATIVAS ( Evitando colisiones de códigos únicos. )
+-- ------------------------------------------------------------------------------
+-- Reserva 3: MercadoLibre con código personalizado MELI-NEXT2026
+INSERT INTO `reservas_hotel` (`id`, `id_empresa`, `codigo_unico_evento`, `fecha_inicio`, `fecha_fin`, `cantidad_estimada_asistentes`, `id_plantilla`) VALUES
+(3, 11, 'MELI-NEXT2026', '2026-08-10', '2026-08-15', 120, 2),
+(4, 12, 'ACN-BOOTCAMP', '2026-10-01', '2026-10-03', 45, NULL);
+
+-- ------------------------------------------------------------------------------
+-- 4. CRONOGRAMAS INTEGRALES PARA LAS NUEVAS RESERVAS
+-- ------------------------------------------------------------------------------
+-- Actividades para el evento de MercadoLibre (id_reserva = 3)
 INSERT INTO `actividades` (`id`, `id_reserva`, `nombre`, `descripcion`, `importancia`, `categoria`, `hora_actividad`) VALUES
-(1, 1, 'Keynote de Apertura: Innovación AI', 'Presentación de las metas tecnológicas y bienvenida institucional.', 'ALTA', 'CHARLAS', '09:00:00'),
-(2, 1, 'Workshop Técnico: Java Avanzado', 'Laboratorio práctico interactivo sobre concurrencia y JPA.', 'MEDIA', 'COWORK', '14:30:00'),
-(3, 1, 'After Office & Networking', 'Espacio libre de recreación con barra de tragos y música en vivo.', 'BAJA', 'RECREACION', '19:00:00');
+(13, 3, 'Apertura Meli Next 2026', 'Palabras clave del directorio sobre escalabilidad en la nube.', 'ALTA', 'CHARLAS', '09:30:00'),
+(14, 3, 'Sprints de Arquitectura Activa', 'Mesas de trabajo simultáneas aplicando microservicios.', 'MEDIA', 'COWORK', '11:00:00'),
+(15, 3, 'Almuerzo Ejecutivo y Descanso', 'Catering libre en los jardines del hotel.', 'BAJA', 'DESCANSO', '13:00:00'),
+(16, 3, 'Hackathon de Integración Fintech', 'Competencia por equipos para desplegar pasarelas de pago operativas.', 'ALTA', 'VARIADOS', '15:00:00');
 
--- COMMIT 
--- ALTER TABLE `actividades` 
--- MODIFY COLUMN `categoria` ENUM('COWORK', 'CHARLAS', 'RECREACION', 'DESCANSO', 'VARIADOS', 'OTROS') NOT NULL;
+-- Actividades para el evento de Accenture (id_reserva = 4)
+INSERT INTO `actividades` (`id`, `id_reserva`, `nombre`, `descripcion`, `importancia`, `categoria`, `hora_actividad`) VALUES
+(17, 4, 'Bienvenida Bootcampers', 'Inducción cultural corporativa y entrega de kits.', 'ALTA', 'CHARLAS', '10:00:00'),
+(18, 4, 'Team Building Recreativo', 'Dinámicas grupales de resolución de problemas en el área central.', 'MEDIA', 'RECREACION', '16:30:00');
 
--- ALTER TABLE `usuarios` 
--- ADD COLUMN `asistencia_confirmada` CHAR(1) NOT NULL DEFAULT 'N',
--- ADD COLUMN `fecha_confirmacion` DATETIME DEFAULT NULL;
+-- ------------------------------------------------------------------------------
+-- 5. LISTA DE INVITADOS PREVIA ( Asociados a sus respectivas reservas con tokens válidos. )
+-- ------------------------------------------------------------------------------
+-- Invitados asignados al evento ya existente de Globant (id_reserva = 1) para poblarlo
+INSERT INTO `lista_invitados_previa` (`id`, `id_reserva`, `dni`, `nombre`, `apellido`, `celular`, `dni_companero`, `token_acceso`, `asistencia_confirmada`) VALUES
+(8, 1, '12345666', 'Michael', 'Schumacher', '1188776655', '0', '9045', 'N');
 
--- ALTER TABLE `lista_invitados_previa` 
--- ADD COLUMN `asistencia_confirmada` CHAR(1) NOT NULL DEFAULT 'N';
+-- Invitados asignados al nuevo evento de MercadoLibre (id_reserva = 3)
+INSERT INTO `lista_invitados_previa` (`id`, `id_reserva`, `dni`, `nombre`, `apellido`, `celular`, `dni_companero`, `token_acceso`, `asistencia_confirmada`) VALUES
+(9, 3, '45111222', 'Marcos', 'Galperin', '1133445566', '43999888', '5512', 'S'),
+(10, 3, '43999888', 'Clara', 'Mendizabal', '1177889900', '45111222', '8841', 'N'),
+(11, 3, '42111555', 'Bautista', 'Agustiz', '1166554433', '', '2194', 'S');
+
+-- ------------------------------------------------------------------------------
+-- 6. ASIGNACIONES DE HABITACIONES Y CONTROL DE CHECK-IN
+-- ------------------------------------------------------------------------------
+-- Habitaciones 201, 202 y 203 se ocupan parcialmente para las simulaciones de prueba
+UPDATE `habitaciones` SET `estado` = 'Half' WHERE `id` IN (4, 5);
+
+INSERT INTO `asignaciones_habitaciones` (`id`, `id_reserva`, `id_habitacion`, `id_usuario`, `casillero_checkin`) VALUES
+(4, 3, 4, 13, '1'),
+(5, 3, 5, 15, '1');
+
+-- ------------------------------------------------------------------------------
+-- 7. REGISTRO DE ASISTENCIAS REALES A ACTIVIDADES
+-- ------------------------------------------------------------------------------
+INSERT INTO `asistencias_actividades` (`id`, `id_actividad`, `id_usuario`, `asistio`) VALUES
+(3, 13, 13, 'S'),
+(4, 14, 13, 'S'),
+(5, 13, 15, 'S');
+
+COMMIT;
