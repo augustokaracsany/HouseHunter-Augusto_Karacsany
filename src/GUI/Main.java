@@ -93,7 +93,7 @@ public class Main {
                                 : (dato1 != null && dato2 != null && dato3 != null && !dato1.trim().isEmpty() && !dato2.trim().isEmpty() && !dato3.trim().isEmpty());
 
                             if (datosValidos) {
-                                // ARQUITECTURA CORRECTA: Enviamos el paquete de datos limpios a través de RegistroController.
+                                // ARQUITECTURA CORRECTA: Se envía el paquete de datos limpios a través de RegistroController.
                                 boolean exito = RegistroController.getInstance().procesarRegistro(emailReg, passReg, rolElegido, dato1, dato2, dato3);
                                 
                                 if (exito) {
