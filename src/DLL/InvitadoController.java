@@ -101,7 +101,11 @@ public class InvitadoController {
             ps.setString(1, token);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    // Instanciamos el invitado con la info de la lista previa.
+                    
+                    // 1. Leemos el estado real de la base de datos ('S' o 'N')
+                    boolean yaConfirmo = "S".equalsIgnoreCase(rs.getString("asistencia_confirmada"));
+
+                    // 2. Instanciamos el invitado con la info de la lista previa y su estado real.
                     Invitado inv = new Invitado(
                         rs.getInt("id"), 
                         "", // Email de la lista previa si no tiene.
@@ -110,14 +114,16 @@ public class InvitadoController {
                         rs.getString("dni"), 
                         rs.getString("celular"),
                         token, 
-                        true
+                        yaConfirmo // <--- ¡AQUÍ CAMBIÓ! Ya no es 'true' clavado.
                     );
                     
+                    // 3. Mantenemos el armado de la reserva intacto para que no rompa la UI
                     Reserva r = new Reserva();
                     r.setId(rs.getInt("id_reserva"));
                     r.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
                     r.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
                     inv.setReserva(r);
+                    
                     return inv;
                 }
             }
@@ -128,7 +134,21 @@ public class InvitadoController {
     }
 
     public boolean confirmarAsistencia(int idInvitado) {
-        return true;
+        // Modificamos el estado físico de la asistencia en la lista previa
+        String sql = "UPDATE lista_invitados_previa SET asistencia_confirmada = 'S' WHERE id = ?";
+        try (Connection con = ConexionController.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            
+            ps.setInt(1, idInvitado);
+            int filasAfectadas = ps.executeUpdate();
+            
+            return filasAfectadas > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Error al confirmar asistencia en BD: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public Habitacion obtenerHabitacionInvitado(int idUsuario) {

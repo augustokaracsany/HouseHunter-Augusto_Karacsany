@@ -30,18 +30,6 @@ public class EmpresaMenu {
     public void mostrarMenuPrincipal() {
         ImageIcon iconoMenu = new ImageIcon("src/img/HouseHunter_Menu-Empresa.png");
         
-        // Modificado para mostrar dinámicamente cuál reserva está operando actualmente.
-        String reservaActivaTexto = (empresa.getReservaActual() != null) 
-            ? "<br><b style='color:green;'>Reserva Activa: ID " + empresa.getReservaActual().getId() + "</b>" 
-            : "<br><b style='color:red;'>Sin reserva activa seleccionada</b>";
-
-        String tituloMenu = "<html><body style='width: 300px; text-align: center;'>"
-                          + "<h2>🏢 Panel de Empresa</h2>"
-                          + "<b>Entidad:</b> " + empresa.getNombre() 
-                          + reservaActivaTexto
-                          + "<hr>Seleccione un módulo de gestión:</body></html>";
-
-        // AGREGADO: Nueva opción "CAMBIAR DE RESERVA".
         String[] modulos = {
             "GESTIÓN DE EVENTO", 
             "PLANIFICACIÓN", 
@@ -53,6 +41,20 @@ public class EmpresaMenu {
 
         int seleccion;
         do {
+            String reservaActivaTexto = "<br><b style='color:red;'>Sin reserva activa seleccionada</b>";
+            if (empresa.getReservaActual() != null) {
+                String cod = empresa.getReservaActual().getCodigoUnicoEvento();
+                String codTexto = (cod != null && !cod.trim().isEmpty()) ? cod : "Sin asignar";
+                reservaActivaTexto = "<br><b style='color:green;'>Reserva Activa: ID " + empresa.getReservaActual().getId() + "</b>"
+                                   + "<br><b style='color:#0055ff;'>Código Evento: " + codTexto + "</b>";
+            }
+
+            String tituloMenu = "<html><body style='width: 300px; text-align: center;'>"
+                              + "<h2>Panel de Empresa</h2>"
+                              + "<b>Entidad:</b> " + empresa.getNombre() 
+                              + reservaActivaTexto
+                              + "<hr>Seleccione un módulo de gestión:</body></html>";
+
             seleccion = JOptionPane.showOptionDialog(
                 null, tituloMenu, "HOUSEHUNTER - EMPRESA",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
@@ -64,15 +66,13 @@ public class EmpresaMenu {
                 case 1: subMenuCronograma(); break; 
                 case 2: subMenuInvitaciones(); break; 
                 case 3: subMenuReportes(); break;
-                case 4: cambiarReservaManual(); break; // AGREGADO: Llama al selector interactivo.
+                case 4: cambiarReservaManual(); break;
                 case 5: JOptionPane.showMessageDialog(null, "Cerrando sesión de " + empresa.getNombre()); break;
             }
-        } while (seleccion != 5 && seleccion != -1); // Ajustado el flag de salida a 5 por el nuevo botón.
+        } while (seleccion != 5 && seleccion != -1); 
     }
 
-    // AGREGADO: Método para cambiar entre reservas en caliente.
     private void cambiarReservaManual() {
-        // Forzamos a borrar la reserva de la memoria temporal para que el asistente la vuelva a pedir.
         empresa.setReservaActual(null); 
         
         if (asegurarReservaSeleccionada()) {
@@ -82,12 +82,11 @@ public class EmpresaMenu {
                 "Cambio de Reserva", JOptionPane.INFORMATION_MESSAGE);
         }
     }
-        // GESTIÓN DE EVENTO
-    	// Para el jueves 4 de junio se deberán entregar dos archivos, un .rar/.zip y el .sql.
-    // Ojo con no exportar una sola tabla en phpMyAdmin, ya me pasó esto antes pero me dí cuenta por suerte.
+
     private void subMenuGestionEvento() {
         ImageIcon iconoGestion = new ImageIcon("src/img/HouseHunter_Menu-Empresa_Gestion.png");
-        String[] opciones = {"REALIZAR RESERVA.", "CARGAR INVITADOS.", "SELECCIONAR PLANTILLA.", "VOLVER."};
+        // Agregamos la opción de editar código único en el arreglo de botones
+        String[] opciones = {"REALIZAR RESERVA.", "CARGAR INVITADOS.", "SELECCIONAR PLANTILLA.", "EDITAR CÓDIGO ÚNICO.", "VOLVER."};
         
         int op = JOptionPane.showOptionDialog(
             null, "<html><body style='width:250px; text-align:center;'><h3>Módulo de Eventos</h3>Seleccione una acción:</body></html>", 
@@ -101,6 +100,42 @@ public class EmpresaMenu {
             cargarInvitadosMasivo();
         } else if (op == 2) {
             seleccionarPlantilla();
+        } else if (op == 3) {
+            editarCodigoUnicoEvento();
+        }
+    }
+
+    private void editarCodigoUnicoEvento() {
+        if (!asegurarReservaSeleccionada()) return;
+
+        Reserva reservaActiva = empresa.getReservaActual();
+        String codigoActual = reservaActiva.getCodigoUnicoEvento();
+        if (codigoActual == null || codigoActual.trim().isEmpty()) {
+            codigoActual = "Sin asignar";
+        }
+
+        String nuevoCodigo = JOptionPane.showInputDialog(null, 
+            "Código único actual del evento: " + codigoActual + "\n\n" +
+            "Ingrese el nuevo código personalizado para el Check-In de sus invitados:", 
+            "Editar Código Único de Evento", JOptionPane.QUESTION_MESSAGE);
+
+        if (nuevoCodigo == null || nuevoCodigo.trim().isEmpty()) {
+            return; 
+        }
+
+        nuevoCodigo = nuevoCodigo.trim().toUpperCase();
+
+        boolean exito = service.actualizarCodigoEvento(reservaActiva.getId(), nuevoCodigo);
+
+        if (exito) {
+            reservaActiva.setCodigoUnicoEvento(nuevoCodigo);
+            JOptionPane.showMessageDialog(null, 
+                "Código del evento actualizado con éxito.\nNuevo código: " + nuevoCodigo, 
+                "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(null, 
+                "Error al intentar actualizar el código en la base de datos.", 
+                "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -134,7 +169,6 @@ public class EmpresaMenu {
         }
     }
 
-    // Esto hacerlo con JTable, va a quedar mucho mejor que insertando quinientas personas en un solo input.
     private void cargarInvitadosMasivo() {
         if (!asegurarReservaSeleccionada()) return; 
 
@@ -162,7 +196,7 @@ public class EmpresaMenu {
             String dni = campos[2].trim();
             String telefono = (campos.length > 3) ? campos[3].trim() : ""; 
 
-            Invitado inv = new Invitado(email, "", nombre, Rol.INVITADO);
+            Invitado inv = new Invitado(email, "123456", nombre, Rol.INVITADO);
             inv.setDni(dni);
             inv.setTelefono(telefono);
 
@@ -179,7 +213,7 @@ public class EmpresaMenu {
         }
 
         if (service.guardarInvitados(lista)) {
-            JOptionPane.showMessageDialog(null, "✅ Se cargaron " + lista.size() + " invitados.\n❌ " + errores + " registros inválidos.");
+            JOptionPane.showMessageDialog(null, "Se cargaron " + lista.size() + " invitados.\n" + errores + " registros inválidos.");
         } else {
             JOptionPane.showMessageDialog(null, "Error al guardar los invitados.", "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -207,13 +241,11 @@ public class EmpresaMenu {
         }
     }
 
-    // PLANIFICACIÓN. / CRONOGRAMA.
-
     private void subMenuCronograma() {
         if (!asegurarReservaSeleccionada()) return;
 
         ImageIcon iconoPlanif = new ImageIcon("src/img/HouseHunter_Menu-Empresa_Planificacion.png");
-        String[] sub = {"Crear actividad", "Asignar importancia", "Guardar cronograma", "Volver"};
+        String[] sub = {"Crear actividad", "Asignar importancia", "Guardar cronograma", "Ver actividades", "Volver"};
         int op;
         do {
             op = JOptionPane.showOptionDialog(
@@ -225,8 +257,37 @@ public class EmpresaMenu {
                 case 0: crearActividad(); break;
                 case 1: asignarImportancia(); break;
                 case 2: guardarCronograma(); break;
+                case 3: verDetalleActividadesEmpresa(); break; 
             }
-        } while (op != 3 && op != -1);
+        } while (op != 4 && op != -1); 
+    }
+    
+    private void verDetalleActividadesEmpresa() {
+        List<Actividad> actividades = service.obtenerActividades();
+        
+        if (actividades.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay Actividades disponibles en el cronograma actual.", "Cronograma Vacío", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        String[] nombres = actividades.stream().map(Actividad::getNombre).toArray(String[]::new);
+        
+        int idx = JOptionPane.showOptionDialog(null, "Seleccione la Actividad que desea consultar:", 
+                "Explorar Cronograma del Evento", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
+                null, nombres, nombres[0]);
+                
+        if (idx >= 0) {
+            Actividad a = actividades.get(idx);
+            String detalle = String.format(
+                "NOMBRE: %s\n\nDescripción: %s\n\nHora actividad: %s\nCategoría: %s\nImportancia: %s",
+                a.getNombre(),
+                a.getDescripcion() != null && !a.getDescripcion().trim().isEmpty() ? a.getDescripcion() : "( Sin descripción. )",
+                a.getFechaHora() != null ? a.getFechaHora().toLocalTime() : "No especificada",
+                a.getCategoria(),
+                a.getImportancia()
+            );
+            JOptionPane.showMessageDialog(null, detalle, "Detaille de la Actividad (Vista Empresa)", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     private void crearActividad() {
@@ -285,7 +346,6 @@ public class EmpresaMenu {
         if (nuevaImp != null) {
             act.setImportancia(Importancia.valueOf(nuevaImp));
             
-            // Refrescamos y actualizamos la lista completa mediante el EmpresaService.
             List<Actividad> todas = service.obtenerActividades();
             for (Actividad a : todas) {
                 if (a.getId() == act.getId()) a.setImportancia(act.getImportancia());
@@ -308,15 +368,12 @@ public class EmpresaMenu {
         JOptionPane.showMessageDialog(null, "Cronograma guardado correctamente.\nTotal actividades: " + actividades.size());
     }
 
-    //  INVITACIONES
-
     private void subMenuInvitaciones() {
         if (!asegurarReservaSeleccionada()) return;
 
         ImageIcon iconoInvit = new ImageIcon("src/img/HouseHunter_Menu-Empresa_Invitaciones.png");
         String textMenu = "<html><body style='width:250px; text-align:center;'><h3>Envío de Invitaciones</h3></body></html>";
         
-        // ENROQUE: Intercambiamos el orden y sentido de los botones para coincidir con la BD.
         String[] sub = {"Listar invitados.", "Generar tokens de acceso.", "Enviar notificaciones por correo", "Volver."};
         int op;
         do {
@@ -331,16 +388,14 @@ public class EmpresaMenu {
                     break;
                     
                 case 1: 
-                    // Ahora este botón ejecuta la lógica real que genera los tokens en la base de datos.
                     if (service.enviarNotificaciones()) {
                         JOptionPane.showMessageDialog(null, "Tokens generados exitosamente en la base de datos.\nRevise la consola para validar las claves generadas.");
                     } else {
-                        JOptionPane.showMessageDialog(null, "❌ Error al generar tokens o no hay invitados en esta reserva.", "Error.", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(null, "Error al generar tokens o no hay invitados en esta reserva.", "Error.", JOptionPane.ERROR_MESSAGE);
                     }
                     break;
                     
                 case 2: 
-                    // Este botón pasa a ser el simulador visual puro para el cliente corporativo.
                     JOptionPane.showMessageDialog(null, "Notificaciones enviadas correctamente.\nTodos los invitados han recibido su correo con el token de acceso correspondientemente.", "Simulador de Envíos.", JOptionPane.INFORMATION_MESSAGE);
                     break;
             }
@@ -362,15 +417,6 @@ public class EmpresaMenu {
         }
         JOptionPane.showMessageDialog(null, sb.toString());
     }
-
-    private void enviarNotificaciones() {
-        if (service.enviarNotificaciones()) {
-            JOptionPane.showMessageDialog(null, "Notificaciones enviadas (simulado).\nRevise la consola para ver los tokens.");
-        } else {
-            JOptionPane.showMessageDialog(null, "No hay invitados cargados para notificar en esta reserva.", "Advertencia.", JOptionPane.WARNING_MESSAGE);
-        }
-    }
-    // REPORTES
 
     private void subMenuReportes() {
         if (!asegurarReservaSeleccionada()) return;
@@ -405,8 +451,6 @@ public class EmpresaMenu {
         );
         JOptionPane.showMessageDialog(null, mensaje);
     }
-
-    // CONTROL DE ESTADO DE SELECCIÓN.
 
     private boolean asegurarReservaSeleccionada() {
         if (empresa.getReservaActual() != null) return true;

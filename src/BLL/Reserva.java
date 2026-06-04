@@ -14,6 +14,7 @@ public class Reserva {
     private LocalDate fechaFin;       // Cambiado: Ahora mapea con 'fecha_fin'.
     private int cantidadEstimadaAsistentes; // Cambiado: Mapea con 'cantidad_estimada_asistentes'.
     private Plantilla plantilla; // Relación con la plantilla de la base de datos
+    private String codigoUnicoEvento; // 🆕 Atributo agregado para mapear 'codigo_unico_evento'
     
     // ( Relaciones 1:N )
     private List<Actividad> actividades;
@@ -30,9 +31,10 @@ public class Reserva {
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
         this.cantidadEstimadaAsistentes = cantidadEstimadaAsistentes;
+        this.codigoUnicoEvento = "GENERANDO..."; // Valor por defecto inicial
     }
     
-    // ( Getters y Setters actualizados )
+    // ( Getters y Setters )
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
     
@@ -56,4 +58,8 @@ public class Reserva {
     
     public Plantilla getPlantilla() { return plantilla; }
     public void setPlantilla(Plantilla plantilla) { this.plantilla = plantilla; }
+
+    // 🆕 Getter y Setter para el Código Único de Evento
+    public String getCodigoUnicoEvento() { return codigoUnicoEvento; }
+    public void setCodigoUnicoEvento(String codigoUnicoEvento) { this.codigoUnicoEvento = codigoUnicoEvento; }
 }

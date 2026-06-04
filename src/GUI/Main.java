@@ -18,7 +18,7 @@ public class Main {
         ImageIcon iconoBienvenida = new ImageIcon("src/img/HouseHunter_Menu-Principal.gif");
 
         String textoHtml = "<html><body style='width: 300px; text-align: center;'>"
-                         + "<h2>🏠 Sistema HouseHunter v1.0</h2>"
+                         + "<h2>Sistema HouseHunter v1.0</h2>"
                          + "Bienvenido al gestor de accesos hoteleros corporativos.<br>"
                          + "<hr>Seleccione una opción para continuar:</body></html>";
 
@@ -33,20 +33,20 @@ public class Main {
             );
 
             if (menuPrincipal == 0) {
-                // LOGUEO.
-                String email = JOptionPane.showInputDialog(null, "Ingrese su email:", "Login.", JOptionPane.QUESTION_MESSAGE);
+                // LOGIN
+                String email = JOptionPane.showInputDialog(null, "Ingrese su email:", "Login", JOptionPane.QUESTION_MESSAGE);
                 if (email != null && !email.trim().isEmpty()) {
-                    String password = JOptionPane.showInputDialog(null, "Ingrese su contraseña:", "Login.", JOptionPane.QUESTION_MESSAGE);
+                    String password = JOptionPane.showInputDialog(null, "Ingrese su contraseña:", "Login", JOptionPane.QUESTION_MESSAGE);
                     if (password != null && !password.trim().isEmpty()) {
                         
-                        // 🚀 ARQUITECTURA CORRECTA: Se invoca al controlador intermedio, respetando las capas.
+                        // ARQUITECTURA CORRECTA: Se invoca al controlador intermedio, respetando las capas.
                         Persona usuario = AutenticacionController.getInstance().iniciarSesion(email, password);
 
                         if (usuario != null) {
                             JOptionPane.showMessageDialog(null, "¡Login exitoso!\nBienvenido " + usuario.getNombre());
                             usuario.mostrarMenu(); // Carga las pantallas internas del usuario logueado.
                             
-                            // Log por consola/terminal del listado técnico para Verificación de los Profesores
+                            // Log por consola/terminal del listado técnico para Verificación
                             System.out.println("--- LISTA DE USUARIOS EN BASE DE DATOS ---");
                             LinkedList<Persona> todos = verificadorRepo.listarTodos();
                             for (Persona p : todos) {
@@ -55,21 +55,21 @@ public class Main {
                             }
                             System.out.println("------------------------------------------");
                         } else {
-                            JOptionPane.showMessageDialog(null, "Credenciales inválidas. Intente nuevamente.", "Error.", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(null, "Credenciales inválidas. Intente nuevamente.", "Error", JOptionPane.ERROR_MESSAGE);
                         }
                     }
                 }
 
             } else if (menuPrincipal == 1) {
-                // REGISTRO.
-                String emailReg = JOptionPane.showInputDialog(null, "Cree su email de usuario:", "Registro.", JOptionPane.QUESTION_MESSAGE);
+                // REGISTRO 
+                String emailReg = JOptionPane.showInputDialog(null, "Cree su email de usuario:", "Registro", JOptionPane.QUESTION_MESSAGE);
                 if (emailReg != null && !emailReg.trim().isEmpty()) {
-                    String passReg = JOptionPane.showInputDialog(null, "Cree su contraseña:", "Registro.", JOptionPane.QUESTION_MESSAGE);
+                    String passReg = JOptionPane.showInputDialog(null, "Cree su contraseña:", "Registro", JOptionPane.QUESTION_MESSAGE);
                     if (passReg != null && !passReg.trim().isEmpty()) {
                         
-                        String[] rolesDisponibles = {"Registrar como EMPRESA", "Registrar como INVITADO"};
+                        String[] rolesDisponibles = {"EMPRESA", "INVITADO"};
                         int seleccionRol = JOptionPane.showOptionDialog(
-                            null, "Seleccione el tipo de cuenta corporativa que desea crear:", "Selector de Rol.",
+                            null, "Seleccione el tipo de cuenta corporativa que desea crear:", "Selector de Rol",
                             JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, rolesDisponibles, rolesDisponibles[0]
                         );
 
@@ -78,13 +78,13 @@ public class Main {
                             String dato1 = "", dato2 = "", dato3 = ""; // Mantenemos los tres contenedores de datos.
 
                             if (rolElegido == Rol.EMPRESA) {
-                                dato1 = JOptionPane.showInputDialog(null, "Ingrese el CUIT de la empresa:", "Datos Empresa.", JOptionPane.QUESTION_MESSAGE);
-                                dato2 = JOptionPane.showInputDialog(null, "Ingrese la Razón Social:", "Datos Empresa.", JOptionPane.QUESTION_MESSAGE);
+                                dato1 = JOptionPane.showInputDialog(null, "Ingrese el CUIT de la empresa:", "Datos Empresa", JOptionPane.QUESTION_MESSAGE);
+                                dato2 = JOptionPane.showInputDialog(null, "Ingrese la Razón Social:", "Datos Empresa", JOptionPane.QUESTION_MESSAGE);
                                 dato3 = null; // Las empresas no utilizan un tercer campo complementario.
                             } else {
-                                dato1 = JOptionPane.showInputDialog(null, "Ingrese su Nombre:", "Datos Invitado.", JOptionPane.QUESTION_MESSAGE);
-                                dato2 = JOptionPane.showInputDialog(null, "Ingrese su Apellido:", "Datos Invitado.", JOptionPane.QUESTION_MESSAGE);
-                                dato3 = JOptionPane.showInputDialog(null, "Ingrese su DNI:", "Datos Invitado.", JOptionPane.QUESTION_MESSAGE); // 🚀 Captura segura del DNI.
+                                dato1 = JOptionPane.showInputDialog(null, "Ingrese su Nombre:", "Datos Invitado", JOptionPane.QUESTION_MESSAGE);
+                                dato2 = JOptionPane.showInputDialog(null, "Ingrese su Apellido:", "Datos Invitado", JOptionPane.QUESTION_MESSAGE);
+                                dato3 = JOptionPane.showInputDialog(null, "Ingrese su DNI:", "Datos Invitado", JOptionPane.QUESTION_MESSAGE); // 🚀 Captura segura del DNI.
                             }
 
                             // Validación estructural de datos antes de disparar el controlador.

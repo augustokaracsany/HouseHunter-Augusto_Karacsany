@@ -66,10 +66,26 @@ public class EventoController {
             try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     reserva.setId(generatedKeys.getInt(1));
+                    reserva.setCodigoUnicoEvento(codigoEvento);
                 }
             }
         }
         return reserva; 
+    }
+
+    // ( Modificación del Código Único de Evento )
+    // Permite que la empresa personalice el identificador de acceso/Check-In de su reserva.
+    public boolean actualizarCodigoUnicoEvento(int idReserva, String nuevoCodigo) {
+        String sql = "UPDATE reservas_hotel SET codigo_unico_evento = ? WHERE id = ?";
+        Connection con = ConexionController.getInstance().getConnection();
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, nuevoCodigo);
+            ps.setInt(2, idReserva);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error al actualizar el codigo unico del evento: " + e.getMessage());
+            return false;
+        }
     }
 
     // ( Consultas )
@@ -91,6 +107,7 @@ public class EventoController {
                     r.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
                     r.setCantidadEstimadaAsistentes(rs.getInt("cantidad_estimada_asistentes"));
                     r.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                    r.setCodigoUnicoEvento(rs.getString("codigo_unico_evento")); // Se mapea el valor de la BD
                     
                     int idPlantilla = rs.getInt("id_plantilla");
                     if (!rs.wasNull()) {
@@ -257,14 +274,14 @@ public class EventoController {
 
                     // Armado del maquetado HTML embed para Swing.
                     reporte.append("<html><body style='width: 300px;'>");
-                    reporte.append("<h2 style='text-align: center; color: #2c3e50;'>📊 Reporte Consolidado</h2>");
+                    reporte.append("<h2 style='text-align: center; color: #2c3e50;'>Reporte Consolidado</h2>");
                     reporte.append("<p style='text-align: center; margin-top:0;'><b>Evento:</b> ").append(codigoEvento).append("</p><hr>");
                     reporte.append("<table style='width: 100%; border-collapse: collapse;'>");
-                    reporte.append("<tr><td><b>📋 Invitados en Lista:</b></td><td style='text-align: right;'>").append(totalInvitados).append("</td></tr>");
-                    reporte.append("<tr><td><b>🏨 Check-ins Exitosos:</b></td><td style='text-align: right;'>").append(totalCheckins).append("</td></tr>");
-                    reporte.append("<tr><td><b>📉 Porcentaje Ocupación:</b></td><td style='text-align: right; color: green;'><b>").append(porcentajeOcupacion).append("%</b></td></tr>");
+                    reporte.append("<tr><td><b>Invitados en Lista:</b></td><td style='text-align: right;'>").append(totalInvitados).append("</td></tr>");
+                    reporte.append("<tr><td><b>Check-ins Exitosos:</b></td><td style='text-align: right;'>").append(totalCheckins).append("</td></tr>");
+                    reporte.append("<tr><td><b>Porcentaje Ocupación:</b></td><td style='text-align: right; color: green;'><b>").append(porcentajeOcupacion).append("%</b></td></tr>");
                     reporte.append("<tr><td colspan='2'><hr style='border-top: 1px dashed #ccc;'></td></tr>");
-                    reporte.append("<tr><td><b>🎮 Asistencias Totales:</b></td><td style='text-align: right; color: #2980b9;'><b>").append(totalAsistencias).append("</b></td></tr>");
+                    reporte.append("<tr><td><b>Asistencias Totales:</b></td><td style='text-align: right; color: #2980b9;'><b>").append(totalAsistencias).append("</b></td></tr>");
                     reporte.append("</table></body></html>");
                     return reporte.toString();
                 }
@@ -274,11 +291,12 @@ public class EventoController {
             return "<html><body>❌ Error técnico al compilar reportes: " + e.getMessage() + "</body></html>";
         }
     }
- // Recupera una reserva específica mediante el ID de usuario de la empresa y su código único, cargando sus actividades
+
+    // Recupera una reserva específica mediante el ID de usuario de la empresa y su código único, cargando sus actividades
     public Reserva obtenerReservaActivaPorCodigo(int idUsuarioEmpresa, String codigoEvento) {
-        String sqlReserva = "SELECT * FROM reservas_hotel WHERE id_empresa = ? AND codigo_unico_evento = ?";
+        String sql = "SELECT * FROM reservas_hotel WHERE id_empresa = ? AND codigo_unico_evento = ?";
         try (Connection con = ConexionController.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sqlReserva)) {
+             PreparedStatement ps = con.prepareStatement(sql)) {
             
             ps.setInt(1, idUsuarioEmpresa);
             ps.setString(2, codigoEvento);
@@ -291,6 +309,7 @@ public class EventoController {
                     r.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
                     r.setCantidadEstimadaAsistentes(rs.getInt("cantidad_estimada_asistentes"));
                     r.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                    r.setCodigoUnicoEvento(rs.getString("codigo_unico_evento")); // Mapeo agregado
                     
                     // Inyectamos las actividades vinculadas automáticamente usando tu método existente
                     r.setActividades(obtenerActividadesPorReserva(r.getId()));
@@ -299,6 +318,35 @@ public class EventoController {
             }
         } catch (SQLException e) {
             System.err.println("Error al recuperar la reserva activa por código: " + e.getMessage());
+        }
+        return null;
+    }
+    
+ // Recupera los datos completos de una reserva usando únicamente su ID correlativo
+    public Reserva obtenerReservaPorId(int idReserva) {
+        String sql = "SELECT * FROM reservas_hotel WHERE id = ?";
+        try (Connection con = ConexionController.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            
+            ps.setInt(1, idReserva);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Reserva r = new Reserva();
+                    r.setId(rs.getInt("id"));
+                    r.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
+                    r.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
+                    r.setCantidadEstimadaAsistentes(rs.getInt("cantidad_estimada_asistentes"));
+                    r.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
+                    r.setCodigoUnicoEvento(rs.getString("codigo_unico_evento"));
+                    
+                    // Cargamos también sus actividades correspondientes
+                    r.setActividades(obtenerActividadesPorReserva(r.getId()));
+                    return r;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al recuperar la reserva por su ID: " + e.getMessage());
         }
         return null;
     }

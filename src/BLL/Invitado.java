@@ -26,6 +26,7 @@ public class Invitado extends Persona {
     private PremioController premioController = PremioController.getInstance(); 
     private ReporteController reporteController = new ReporteController(); 
     
+    // Constructor 1: Básico
     public Invitado(String email, String password, String nombre, Rol rol) {
         super(email, password, rol); 
         this.nombre = nombre;
@@ -33,6 +34,7 @@ public class Invitado extends Persona {
         this.asistenciaConfirmada = false;
     }
 
+    // Constructor 2: Registro con Apellido
     public Invitado(String email, String password, String nombre, String apellido, Rol rol) {
         super(email, password, rol);
         this.nombre = nombre;
@@ -56,6 +58,10 @@ public class Invitado extends Persona {
         return nombre + (apellido != null && !apellido.isEmpty() ? " " + apellido : "");
     }
 
+    public String getNombreSolo() {
+        return this.nombre;
+    }
+
     @Override
     public void mostrarMenu() {
         if (reserva == null) {
@@ -76,29 +82,48 @@ public class Invitado extends Persona {
             this.reserva = invitadoValidado.getReserva();
             this.tokenAcceso = invitadoValidado.getTokenAcceso();
             this.asistenciaConfirmada = invitadoValidado.isAsistenciaConfirmada();
+
+            // Sincronización limpia utilizando el ID directo de la reserva
+            if (this.reserva != null) {
+                Reserva reservaCompleta = eventoController.obtenerReservaPorId(this.reserva.getId());
+                if (reservaCompleta != null) {
+                    this.reserva = reservaCompleta;
+                }
+            }
+
             JOptionPane.showMessageDialog(null, "Acceso concedido. Bienvenido al evento del: " + reserva.getFechaInicio());
         }
 
-        ImageIcon iconoInvitado = new ImageIcon("src/img/HouseHunter_Menu-Invitado.png");
-        String tituloHtml = "<html><body style='width: 350px; text-align: center;'>"
-                          + "<h2>Panel del Invitado</h2>"
-                          + "<b>Hola, " + getNombre() + "</b><br>"
-                          + "<b>Estadía:</b> " + reserva.getFechaInicio() + " al " + reserva.getFechaFin() + "<br>"
-                          + "<b>Estado asistencia:</b> " + (asistenciaConfirmada ? "Confirmada." : "Pendiente.")
-                          + "<hr>Seleccione una opción:</body></html>";
-
-        // Se redujo el menú unificando la lógica de vouchers dentro de sorteos
-        String[] opciones = {
-            "VER CRONOGRAMA COMPLETO.",
-            "CONFIRMAR MI ASISTENCIA.", // < WIP
-            "EXPLORAR ACTIVIDADES.",
-            "CONSULTAR MI HABITACIÓN.",
-            "PARTICIPAR EN SORTEOS / PREMIOS.",
-            "CERRAR SESIÓN."
-        };
-
         int seleccion;
         do {
+            String estadoAsistenciaTexto = asistenciaConfirmada ? "Confirmada." : "Pendiente.";
+            String codigoEventoTexto = "<br><b style='color:red;'>Sin código de evento asignado</b>";
+            
+            // Se muestra el código siempre que la reserva esté disponible, tal como en el menú de la empresa
+            if (reserva != null) {
+                String cod = reserva.getCodigoUnicoEvento();
+                String codTexto = (cod != null && !cod.trim().isEmpty()) ? cod : "Sin asignar";
+                codigoEventoTexto = "<br><b style='color:#0055ff;'>Código Único del Evento: " + codTexto + "</b>";
+            }
+
+            ImageIcon iconoInvitado = new ImageIcon("src/img/HouseHunter_Menu-Invitado.png");
+            String tituloHtml = "<html><body style='width: 350px; text-align: center;'>"
+                              + "<h2>Panel del Invitado</h2>"
+                              + "<b>Hola, " + getNombre() + "</b><br>"
+                              + "<b>Estadía:</b> " + reserva.getFechaInicio() + " al " + reserva.getFechaFin() + "<br>"
+                              + "<b>Estado asistencia:</b> " + estadoAsistenciaTexto
+                              + codigoEventoTexto
+                              + "<hr>Seleccione una opción:</body></html>";
+
+            String[] opciones = {
+                "VER CRONOGRAMA COMPLETO.",
+                "CONFIRMAR MI ASISTENCIA.", 
+                "EXPLORAR ACTIVIDADES.",
+                "CONSULTAR MI HABITACIÓN.",
+                "PARTICIPAR EN SORTEOS / PREMIOS.",
+                "CERRAR SESIÓN."
+            };
+
             seleccion = JOptionPane.showOptionDialog(null, tituloHtml, "HOUSEHUNTER - INVITADO",
                     JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
                     iconoInvitado, opciones, opciones[0]);
@@ -108,7 +133,7 @@ public class Invitado extends Persona {
                 case 1: confirmarAsistencia(); break;
                 case 2: verDetalleActividad(); break;
                 case 3: consultarHabitacion(); break;
-                case 4: gestionarPremiosYSorteos(); break; // Llama al nuevo submenú unificado
+                case 4: gestionarPremiosYSorteos(); break; 
                 case 5: JOptionPane.showMessageDialog(null, "Sesión cerrada. ¡Hasta pronto!"); break;
             }
         } while (seleccion != 5 && seleccion != -1);
@@ -141,11 +166,27 @@ public class Invitado extends Persona {
         int opcion = JOptionPane.showConfirmDialog(null, 
             "¿Confirmas tu Asistencia para la estadía del " + reserva.getFechaInicio() + " al " + reserva.getFechaFin() + "?\nEsta acción no se puede deshacer.", 
             "Confirmar Asistencia.", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            
         if (opcion == JOptionPane.YES_OPTION) {
             boolean ok = invitadoController.confirmarAsistencia(this.id); 
             if (ok) {
                 this.asistenciaConfirmada = true;
-                JOptionPane.showMessageDialog(null, "¡Gracias! Tu Asistencia ha sido registrada.");
+                this.fechaConfirmacion = LocalDateTime.now();
+                
+                String codigoDeBD = (reserva != null && reserva.getCodigoUnicoEvento() != null) ? reserva.getCodigoUnicoEvento() : "N/A";
+
+                String cartelExito = String.format(
+                    "<html><body style='text-align: center; width: 260px;'>"
+                    + "<h3 style='color: green;'>¡Confirmación Exitosa!</h3>"
+                    + "<p>Gracias por tu colaboración.</p>"
+                    + "<hr>"
+                    + "<p>Presentá este código en la recepción del hotel para que te asignen tu habitación:</p>"
+                    + "<h2 style='color: #0055ff; letter-spacing: 1px;'>%s</h2>"
+                    + "</body></html>",
+                    codigoDeBD
+                );
+
+                JOptionPane.showMessageDialog(null, cartelExito, "HouseHunter - Asistencia Registrada", JOptionPane.INFORMATION_MESSAGE);
             } else {
                 JOptionPane.showMessageDialog(null, "Error al confirmar Asistencia. Intente más tarde.", "Error.", JOptionPane.ERROR_MESSAGE);
             }
@@ -189,7 +230,6 @@ public class Invitado extends Persona {
         }
     }
 
-    // Submenú intermedio para unificar la gestión de sorteos y canje de vouchers
     private void gestionarPremiosYSorteos() {
         String[] opcionesPremios = {
             "Inscribirse en un Sorteo.",
@@ -220,7 +260,7 @@ public class Invitado extends Persona {
             return;
         }
         String[] nombresPremios = premios.stream().map(Premio::getNombre).toArray(String[]::new);
-        int sel = JOptionPane.showOptionDialog(null, "Seleccione el premio al que desea participar:", 
+        int sel = JOptionPane.showOptionDialog(null, "Seleccione the premio al que desea participar:", 
                 "Participar en sorteo.", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
                 null, nombresPremios, nombresPremios[0]);
         if (sel >= 0) {
@@ -234,8 +274,7 @@ public class Invitado extends Persona {
             }
         }
     }
-// Falta hacer el menú de Gestión de Vouchers y Premios en el menú de Empresa.
-    // Esto anda pero sin la parte de ABM en Empresa no tiene sentido. < Debería Funcionar.
+
     private void obtenerVoucher() {
         List<Premio> premios = premioController.listarPremiosDisponibles();
         if (premios.isEmpty()) {
@@ -258,21 +297,27 @@ public class Invitado extends Persona {
             }
         }
     }
-// Error que se muestra si no hay Reservas asociadas de un Huesped/Invitado a Cliente/Empresa.
+
     private void mostrarErrorSinReserva() {
         JOptionPane.showMessageDialog(null, "No hay información de reserva asociada. Contacte al organizador.", 
                 "Error.", JOptionPane.ERROR_MESSAGE);
     }
 
-    // Getters y Setters básicos de Invitado.
+    // Getters & Setters
     public String getApellido() { return apellido; }
     public void setApellido(String apellido) { this.apellido = apellido; }
     public String getDni() { return dni; }
     public void setDni(String dni) { this.dni = dni; }
     public String getTelefono() { return telefono; }
     public void setTelefono(String telefono) { this.telefono = telefono; }
-    public String getTokenAcceso() { return tokenAcceso; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    
+    public String getTokenAcceso() { 
+        return (tokenAcceso == null || tokenAcceso.trim().isEmpty()) ? "Sin generar" : tokenAcceso; 
+    }
     public void setTokenAcceso(String tokenAcceso) { this.tokenAcceso = tokenAcceso; }
+    
     public boolean isAsistenciaConfirmada() { return asistenciaConfirmada; }
     public void setAsistenciaConfirmada(boolean asistenciaConfirmada) { this.asistenciaConfirmada = asistenciaConfirmada; }
     public LocalDateTime getFechaConfirmacion() { return fechaConfirmacion; }

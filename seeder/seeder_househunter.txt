@@ -19,3 +19,10 @@ INSERT INTO `actividades` (`id`, `id_reserva`, `nombre`, `descripcion`, `importa
 -- COMMIT 
 -- ALTER TABLE `actividades` 
 -- MODIFY COLUMN `categoria` ENUM('COWORK', 'CHARLAS', 'RECREACION', 'DESCANSO', 'VARIADOS', 'OTROS') NOT NULL;
+
+-- ALTER TABLE `usuarios` 
+-- ADD COLUMN `asistencia_confirmada` CHAR(1) NOT NULL DEFAULT 'N',
+-- ADD COLUMN `fecha_confirmacion` DATETIME DEFAULT NULL;
+
+-- ALTER TABLE `lista_invitados_previa` 
+-- ADD COLUMN `asistencia_confirmada` CHAR(1) NOT NULL DEFAULT 'N';
