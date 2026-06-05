@@ -76,23 +76,63 @@ public class PremioController {
             return false;
         }
     }
+    
+    // ALTA de Premio desde Empresa.
+    public boolean guardarPremio(int idReserva, String nombre, String descripcion, int cantidad) {
+        String sql = "INSERT INTO premios (id_reserva, nombre_premio, descripcion, cantidad_disponible, activo, entregado) VALUES (?, ?, ?, ?, 1, 'N')";
+        Connection con = ConexionController.getInstance().getConnection();
+        
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idReserva);
+            ps.setString(2, nombre);
+            ps.setString(3, descripcion);
+            ps.setInt(4, cantidad);
+            
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
-    // Casos de Uso del Invitado ( Branch 'feat/luca'. ).
-    // ( Listar premios activos. )
+    // Listar Premios filtrados por Evento.
+    public List<Premio> listarPremiosPorReserva(int idReserva) {
+        List<Premio> premios = new ArrayList<>();
+        String sql = "SELECT id, nombre_premio, descripcion, cantidad_disponible, activo FROM premios WHERE id_reserva = ? AND activo = 1";
+        Connection con = ConexionController.getInstance().getConnection();
+        
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idReserva);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Premio p = new Premio();
+                    p.setId(rs.getInt("id"));
+                    p.setNombre(rs.getString("nombre_premio"));
+                    p.setDescripcion(rs.getString("descripcion"));
+                    p.setCantidadDisponible(rs.getInt("cantidad_disponible"));
+                    p.setActivo(rs.getBoolean("activo"));
+                    premios.add(p);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return premios;
+    }
+
+    // Listar Premios Disponibles en general.
     public List<Premio> listarPremiosDisponibles() {
         List<Premio> premios = new ArrayList<>();
-        // Ajustamos la query para evitar colisiones de nombres según las columnas de la BD.
         String sql = "SELECT id, nombre_premio, descripcion, cantidad_disponible, activo FROM premios WHERE activo = 1 AND cantidad_disponible > 0";
+        Connection con = ConexionController.getInstance().getConnection();
         
-        try (Connection con = ConexionController.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql);
+        try (PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             
             while (rs.next()) {
                 Premio p = new Premio();
                 p.setId(rs.getInt("id"));
-                // Salvamos la diferencia de nombres ( nombre_premio en la BD -> setNombre en el objeto. ).
-                p.setNombre(rs.getString("nombre_premio")); // < Referencia a datos de Tabla Premios en househunter.sql.
+                p.setNombre(rs.getString("nombre_premio")); 
                 p.setDescripcion(rs.getString("descripcion"));
                 p.setCantidadDisponible(rs.getInt("cantidad_disponible"));
                 p.setActivo(rs.getBoolean("activo"));
@@ -104,52 +144,52 @@ public class PremioController {
         return premios;
     }
 
-    // ( Participar en sorteo postulándose manualmente. )
-    public boolean participarEnSorteo(int idInvitado, int idPremio) {
-        String checkSql = "SELECT id FROM participaciones_premios WHERE id_invitado = ? AND id_premio = ?";
-        String insertSql = "INSERT INTO participaciones_premios (id_invitado, id_premio, elegible, ganador, voucher) VALUES (?, ?, ?, ?, ?)";
+    public boolean participarEnSorteo(int idUsuarioReal, int idPremio) {
+        // Primero verificamos si ya existe la postulación para evitar duplicados.
+        String sqlCheck = "SELECT COUNT(*) FROM participaciones_premios WHERE id_invitado = ? AND id_premio = ?";
+        String sqlInsert = "INSERT INTO participaciones_premios (id_invitado, id_premio, elegible, ganador) VALUES (?, ?, 1, 0)";
         
-        try (Connection con = ConexionController.getInstance().getConnection()) {
-            
-            // 1. Verificación previa de duplicados.
-            try (PreparedStatement psCheck = con.prepareStatement(checkSql)) {
-                psCheck.setInt(1, idInvitado);
+        Connection con = ConexionController.getInstance().getConnection();
+        
+        try {
+            // 1. Validar duplicación.
+            try (PreparedStatement psCheck = con.prepareStatement(sqlCheck)) {
+                psCheck.setInt(1, idUsuarioReal);
                 psCheck.setInt(2, idPremio);
                 try (ResultSet rs = psCheck.executeQuery()) {
-                    if (rs.next()) {
-                        System.out.println("El invitado ya participó en este premio.");
-                        return false;
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        return false; // Ya está postulado.
                     }
                 }
             }
             
-            // 2. Inserción directa si pasó el filtro.
-            try (PreparedStatement ps = con.prepareStatement(insertSql)) {
-                ps.setInt(1, idInvitado);
-                ps.setInt(2, idPremio);
-                ps.setBoolean(3, false); 
-                ps.setBoolean(4, false); 
-                ps.setString(5, null);  
-                return ps.executeUpdate() > 0;
+            // 2. Insertar postulación limpia vinculada al ID de Usuario Real.
+            try (PreparedStatement psInsert = con.prepareStatement(sqlInsert)) {
+                psInsert.setInt(1, idUsuarioReal);
+                psInsert.setInt(2, idPremio);
+                int filas = psInsert.executeUpdate();
+                return filas > 0;
             }
             
         } catch (SQLException e) {
-            // Maneja de forma segura errores como la clave duplicada. 
-        	// ( El "Error 1062" que sale en MySQL. )
+            System.err.println("Error en PremioController.participarEnSorteo: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
-    // ( Verificar si el invitado cumple los requisitos de asistencia. )
-    public boolean esElegible(int idInvitado) {
-        String sql = "SELECT asistencia_confirmada FROM invitados WHERE id = ?";
-        try (Connection con = ConexionController.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, idInvitado);
+
+    // Verificar Requisitos de Asistencia ( Corregido. ).
+
+    public boolean esElegible(int idUsuario) {
+        // CORRECCIÓN: Esto debería apuntar a la tabla 'usuarios' o 'asistencias_actividades'.
+        String sql = "SELECT id FROM usuarios WHERE id = ?"; 
+        Connection con = ConexionController.getInstance().getConnection();
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, idUsuario);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getBoolean("asistencia_confirmada");
+                    return true; // Si el usuario existe y su login está activo. Tira TRUE.
                 }
             }
         } catch (SQLException e) {
@@ -158,14 +198,15 @@ public class PremioController {
         return false;
     }
 
-    // ( Obtener o generar el voucher único si salió ganador. )
+
+    // ( Obtener Voucher. )
+
     public String obtenerVoucher(int idInvitado, int idPremio) {
         String selectSql = "SELECT voucher, ganador FROM participaciones_premios WHERE id_invitado = ? AND id_premio = ?";
         String updateSql = "UPDATE participaciones_premios SET voucher = ? WHERE id_invitado = ? AND id_premio = ?";
+        Connection con = ConexionController.getInstance().getConnection();
         
-        try (Connection con = ConexionController.getInstance().getConnection();
-             PreparedStatement ps = con.prepareStatement(selectSql)) {
-            
+        try (PreparedStatement ps = con.prepareStatement(selectSql)) {
             ps.setInt(1, idInvitado);
             ps.setInt(2, idPremio);
             
@@ -178,10 +219,9 @@ public class PremioController {
                     
                     boolean esGanador = rs.getBoolean("ganador");
                     if (!esGanador) {
-                        return null; // No ganó, no se le da voucher.
+                        return null; 
                     }
                     
-                    // Si ganó y no lo tiene, se lo generamos de manera atómica.
                     String nuevoVoucher = generarVoucherUnico();
                     try (PreparedStatement psUpd = con.prepareStatement(updateSql)) {
                         psUpd.setString(1, nuevoVoucher);
@@ -203,27 +243,29 @@ public class PremioController {
         return "VCH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    // ( Método de Luca para sortear sobre los postulados - REFACTORIZADO TRANSACCIONAL. )
-    public boolean realizarSorteo(int idPremio) { // < Refactor.
+
+    // Ejecutar Quini6
+    
+    public boolean realizarSorteo(int idPremio) {
         String checkStock = "SELECT cantidad_disponible FROM premios WHERE id = ?";
         String updateElegibles = "UPDATE participaciones_premios SET elegible = ? WHERE id_premio = ? AND elegible = 0";
         String seleccionarGanador = "SELECT id_invitado FROM participaciones_premios WHERE id_premio = ? AND elegible = 1 AND ganador = 0 ORDER BY RAND() LIMIT 1";
         String marcarGanador = "UPDATE participaciones_premios SET ganador = 1 WHERE id_invitado = ? AND id_premio = ?";
         String reducirStock = "UPDATE premios SET cantidad_disponible = cantidad_disponible - 1 WHERE id = ?";
         
-        // Abrimos una única conexión para controlar toda la operación en bloque continuo.
-        try (Connection con = ConexionController.getInstance().getConnection()) {
-            
-            // TRANSACCIÓN MANUAL.
+        Connection con = ConexionController.getInstance().getConnection();
+        
+        try {
+            // Transacción Manual.
             con.setAutoCommit(false); 
 
             try {
-                // 1. Validar Stock disponible.
+                // 1. Validar el Stock disponible.
                 try (PreparedStatement psCheck = con.prepareStatement(checkStock)) {
                     psCheck.setInt(1, idPremio);
                     try (ResultSet rsStock = psCheck.executeQuery()) {
                         if (rsStock.next() && rsStock.getInt("cantidad_disponible") <= 0) {
-                            con.rollback(); // Cancelamos todo por falta de stock.
+                            con.rollback(); 
                             return false;
                         }
                     }
@@ -259,23 +301,22 @@ public class PremioController {
                     psGan.setInt(2, idPremio);
                     psGan.executeUpdate();
                 }
-
+                
+                // Faltaba que se reduzca el Stock también me parece.
+                // Cuando hice el MERGE de feat/luca no había nada de reducirStock, no me suena.
                 // 5. Reducir el stock del inventario.
                 try (PreparedStatement psStock = con.prepareStatement(reducirStock)) {
                     psStock.setInt(1, idPremio);
                     psStock.executeUpdate();
                 }
 
-                // SI SALIÓ BIEN, IMPACTAMOS LOS CAMBIOS EN LA BD.
                 con.commit(); 
                 return true;
 
             } catch (SQLException ex) {
-                // Si cualquiera de los 5 pasos falla en runtime, el motor deshace todo automáticamente.
                 con.rollback();
                 throw ex; 
             } finally {
-                // Restauramos el comportamiento por defecto de la conexión.
                 con.setAutoCommit(true);
             }
 

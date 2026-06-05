@@ -93,11 +93,13 @@ public class ActividadController {
      // Transacción: Valida la existencia cruzada del invitado y de la actividad.
      // Si pasa los filtros, inserta o actualiza la Asistencia usando sintaxis nativa de MySQL.
      
+ // Transacción: Valida la existencia cruzada del invitado y de la actividad.
+    // Si pasa los filtros, inserta o actualiza la Asistencia y activa la ELEGIBILIDAD para sorteos de forma automática.
     public boolean registrarAsistenciaActividad(String codigoEvento, String nombreActividad, String dniInvitado) {
         Connection con = ConexionController.getInstance().getConnection();
         
         // Query de verificación con un cuádruple JOIN para asegurar consistencia e integridad referencial.
-        String sqlIds = "SELECT a.id AS id_act_real, dp.id_usuario AS id_user_real " +
+        String sqlIds = "SELECT a.id AS id_act_real, dp.id_usuario AS id_user_real, rh.id AS id_reserva_real " +
                         "FROM reservas_hotel rh " +
                         "JOIN actividades a ON a.id_reserva = rh.id " +
                         "JOIN lista_invitados_previa lip ON lip.id_reserva = rh.id " +
@@ -108,8 +110,14 @@ public class ActividadController {
         String sqlInsertAsistencia = "INSERT INTO asistencias_actividades (id_actividad, id_usuario, asistio) VALUES (?, ?, 'S') " +
                                      "ON DUPLICATE KEY UPDATE asistio = 'S'";
 
+        // QUERY AUTOMÁTICO: Activa la elegibilidad en los sorteos para este usuario en todos los premios de esta reserva
+        String sqlHabilitarSorteo = "UPDATE participaciones_premios pp " +
+                                    "JOIN premios p ON pp.id_premio = p.id " +
+                                    "SET pp.elegible = 1 " +
+                                    "WHERE pp.id_invitado = ? AND p.id_reserva = ?";
+
         try {
-            int idActividad = 0, idUsuario = 0;
+            int idActividad = 0, idUsuario = 0, idReserva = 0;
             try (PreparedStatement ps = con.prepareStatement(sqlIds)) {
                 ps.setString(1, codigoEvento);
                 ps.setString(2, nombreActividad);
@@ -118,6 +126,7 @@ public class ActividadController {
                     if (rs.next()) {
                         idActividad = rs.getInt("id_act_real");
                         idUsuario = rs.getInt("id_user_real");
+                        idReserva = rs.getInt("id_reserva_real");
                     }
                 }
             }
@@ -128,19 +137,35 @@ public class ActividadController {
                 return false;
             }
 
-            // Ejecución del impacto en la base de datos tras superar las validaciones de negocio.
+            // Iniciamos una pequeña transacción local para asegurar que se hagan ambos pasos o ninguno
+            con.setAutoCommit(false);
+
+            // Paso 1: Registrar el presente en la actividad
             try (PreparedStatement ps = con.prepareStatement(sqlInsertAsistencia)) {
                 ps.setInt(1, idActividad);
                 ps.setInt(2, idUsuario);
                 ps.executeUpdate();
             }
-            JOptionPane.showMessageDialog(null, "✅ Asistencia registrada con éxito.");
+            
+            // Paso 2: Activar la elegibilidad del sorteo para los premios de esta reserva
+            try (PreparedStatement psSorteo = con.prepareStatement(sqlHabilitarSorteo)) {
+                psSorteo.setInt(1, idUsuario);
+                psSorteo.setInt(2, idReserva);
+                psSorteo.executeUpdate();
+            }
+
+            con.commit(); // Guardamos los dos cambios de forma segura
+            JOptionPane.showMessageDialog(null, "✅ Asistencia registrada. ¡El invitado ya está habilitado para los sorteos!");
             return true;
+            
         } catch (SQLException e) {
+            try { con.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            System.err.println("Error en transacción de asistencia/elegibilidad: " + e.getMessage());
             return false;
+        } finally {
+            try { con.setAutoCommit(true); } catch (SQLException e) { e.printStackTrace(); }
         }
     }
-
    // ( CRUD / ABM para Empresa. )
     // Inserción directa de un nuevo registro en la tabla 'actividades'.
     public boolean guardarActividad(int idReserva, String nombre, String desc, String importancia, String categoria, String hora) {

@@ -20,7 +20,6 @@ public class InvitadoController {
         return instance;
     }
 
-    // Apunta a la tabla física real: 'lista_invitados_previa'
     public boolean cargarInvitados(int idReserva, List<Invitado> invitados) {
         String sql = "INSERT INTO lista_invitados_previa (id_reserva, nombre, apellido, celular, dni, dni_companero) VALUES (?, ?, ?, ?, ?, ?)";
         Connection con = ConexionController.getInstance().getConnection();
@@ -54,14 +53,11 @@ public class InvitadoController {
                 && inv.getDni() != null && !inv.getDni().trim().isEmpty();
     }
 
-    // CAMBIADO: Ahora genera un PIN numérico de 4 dígitos fácil de tipear. 
-    // Faltaba cambiar el placeholder del PIN. < ARREGLADO.
     public String generarTokenUnico() {
         int pin = 1000 + (int)(Math.random() * 9000);
         return String.valueOf(pin);
     }
 
-    // MODIFICADO: Ahora el listado levanta el token real de la base de datos si existe.
     public List<Invitado> listarInvitadosPorReserva(int idReserva) {
         List<Invitado> lista = new ArrayList<>();
         String sql = "SELECT id, nombre, apellido, dni, celular, token_acceso FROM lista_invitados_previa WHERE id_reserva = ?";
@@ -77,7 +73,7 @@ public class InvitadoController {
                             rs.getString("apellido"),
                             rs.getString("dni"),
                             rs.getString("celular"),
-                            rs.getString("token_acceso"), // < Mapea el token real de la BD
+                            rs.getString("token_acceso"), 
                             false
                     );
                     lista.add(inv);
@@ -89,35 +85,42 @@ public class InvitadoController {
         return lista;
     }
     
-    // Feat.
-    // REHECHO: Ahora busca el PIN de 4 dígitos directamente en la columna física correspondiente.
+    // =========================================================================
+    // REFACTOR CRÍTICO: Sincroniza el ID de lista previa con el ID de Usuario Real
+    // =========================================================================
     public Invitado validarToken(String token) {
-        String sql = "SELECT lip.*, rh.fecha_inicio, rh.fecha_fin " +
+        String sql = "SELECT lip.*, rh.fecha_inicio, rh.fecha_fin, dp.id_usuario AS id_usuario_real " +
                      "FROM lista_invitados_previa lip " +
                      "JOIN reservas_hotel rh ON lip.id_reserva = rh.id " +
+                     "LEFT JOIN datos_personas dp ON lip.dni = dp.dni " + // Cruzamos por DNI para buscar si ya existe el usuario formal
                      "WHERE lip.token_acceso = ?";
+                     
         try (Connection con = ConexionController.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, token);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     
-                    // 1. Leemos el estado real de la base de datos ('S' o 'N')
                     boolean yaConfirmo = "S".equalsIgnoreCase(rs.getString("asistencia_confirmada"));
 
-                    // 2. Instanciamos el invitado con la info de la lista previa y su estado real.
                     Invitado inv = new Invitado(
-                        rs.getInt("id"), 
-                        "", // Email de la lista previa si no tiene.
+                        rs.getInt("id"), // Conservamos el ID de lista_invitados_previa por compatibilidad de UI
+                        "", 
                         rs.getString("nombre"),
                         rs.getString("apellido"), 
                         rs.getString("dni"), 
                         rs.getString("celular"),
                         token, 
-                        yaConfirmo // <--- ¡AQUÍ CAMBIÓ! Ya no es 'true' clavado.
+                        yaConfirmo 
                     );
                     
-                    // 3. Mantenemos el armado de la reserva intacto para que no rompa la UI
+                    // COMODÍN DE IDENTIDAD: Si el usuario ya está registrado en el sistema,
+                    // sobreescribimos el ID con su ID real de la tabla 'usuarios' para evitar errores en cascada (Sorteos).
+                    int idUsuarioReal = rs.getInt("id_usuario_real");
+                    if (idUsuarioReal > 0) {
+                        inv.setId(idUsuarioReal);
+                    }
+                    
                     Reserva r = new Reserva();
                     r.setId(rs.getInt("id_reserva"));
                     r.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
@@ -133,46 +136,60 @@ public class InvitadoController {
         return null;
     }
 
-    public boolean confirmarAsistencia(int idInvitado) {
-        // Modificamos el estado físico de la asistencia en la lista previa
-        String sql = "UPDATE lista_invitados_previa SET asistencia_confirmada = 'S' WHERE id = ?";
+    public boolean confirmarAsistencia(int idUsuarioReal) {
+        // Este query mágico actualiza 'usuarios' y 'lista_invitados_previa' cruzándolas por el DNI de datos_personas
+        String sql = "UPDATE usuarios u " +
+                     "JOIN datos_personas dp ON u.id = dp.id_usuario " +
+                     "JOIN lista_invitados_previa lip ON dp.dni = lip.dni " +
+                     "SET u.asistencia_confirmada = 'S', " +
+                     "    u.fecha_confirmacion = NOW(), " +
+                     "    lip.asistencia_confirmada = 'S' " +
+                     "WHERE u.id = ?";
+                     
         try (Connection con = ConexionController.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             
-            ps.setInt(1, idInvitado);
+            ps.setInt(1, idUsuarioReal);
             int filasAfectadas = ps.executeUpdate();
             
+            // Si modificó registros, significa que la sincronización fue un éxito total
             return filasAfectadas > 0;
             
         } catch (SQLException e) {
-            System.err.println("Error al confirmar asistencia en BD: " + e.getMessage());
+            System.err.println("Error crítico al confirmar asistencia en BD: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
-    public Habitacion obtenerHabitacionInvitado(int idUsuario) {
+    public Habitacion obtenerHabitacionInvitado(int idUsuarioReal) {
         String sql = "SELECT h.* FROM habitaciones h " +
-                     "JOIN asignaciones_habitaciones ah ON ah.id_habitacion = h.id WHERE ah.id_usuario = ?";
+                     "JOIN asignaciones_habitaciones ah ON ah.id_habitacion = h.id " +
+                     "WHERE ah.id_usuario = ?";
+                     
         try (Connection con = ConexionController.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, idUsuario);
+            
+            ps.setInt(1, idUsuarioReal);
+            
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return new Habitacion(
                         rs.getInt("id"),
                         rs.getString("numero"),
-                        rs.getString("tipo"),
-                        rs.getInt("capacidad"),
+                        "STANDARD", // Colocamos un default o un valor genérico según tu constructor
+                        0, 
                         EstadoHabitacion.valueOf(rs.getString("estado"))
                     );
                 }
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException e) { 
+            System.err.println("Error al obtener la habitación del invitado: " + e.getMessage());
+            e.printStackTrace(); 
+        }
         return null;
     }
 
-    // PERSISTENTE: Ahora genera los PINs de 4 dígitos y los guarda en MySQL.
     public boolean enviarNotificaciones(List<Invitado> listaInvitados) {
         if (listaInvitados == null || listaInvitados.isEmpty()) {
             return false;
@@ -186,7 +203,7 @@ public class InvitadoController {
             
             try (PreparedStatement ps = con.prepareStatement(sqlUpdate)) {
                 for (Invitado inv : listaInvitados) {
-                    String tokenPin = generarTokenUnico(); // Genera el PIN de 4 números.
+                    String tokenPin = generarTokenUnico(); 
                     
                     ps.setString(1, tokenPin);
                     ps.setInt(2, inv.getId());

@@ -26,7 +26,7 @@ public class Invitado extends Persona {
     private PremioController premioController = PremioController.getInstance(); 
     private ReporteController reporteController = new ReporteController(); 
     
-    // Constructor 1: Básico
+    // Constructor 1: Básico.
     public Invitado(String email, String password, String nombre, Rol rol) {
         super(email, password, rol); 
         this.nombre = nombre;
@@ -34,7 +34,7 @@ public class Invitado extends Persona {
         this.asistenciaConfirmada = false;
     }
 
-    // Constructor 2: Registro con Apellido
+    // Constructor 2: Registro con Apellido.
     public Invitado(String email, String password, String nombre, String apellido, Rol rol) {
         super(email, password, rol);
         this.nombre = nombre;
@@ -42,9 +42,10 @@ public class Invitado extends Persona {
         this.asistenciaConfirmada = false;
     }
 
+    // Constructor 3: Desde Base de Datos.
     public Invitado(int id, String email, String nombre, String apellido, String dni, String telefono, String tokenAcceso, boolean asistenciaConfirmada) {
         super(email, "", Rol.INVITADO); 
-        this.id = id;
+        this.id = id; // CORRECCIÓN: Asigna el ID al atributo heredado de Persona.
         this.nombre = nombre;
         this.apellido = apellido;
         this.dni = dni;
@@ -78,12 +79,14 @@ public class Invitado extends Persona {
                 JOptionPane.showMessageDialog(null, "Token inválido o expirado. No puede acceder al sistema.", "Error.", JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            this.id = invitadoValidado.getId();
+            
+            // CORRECCIÓN CRÍTICA: Sincronizar el ID real del usuario validado hacia la herencia ( this.id ).
+            this.id = invitadoValidado.getId(); 
             this.reserva = invitadoValidado.getReserva();
             this.tokenAcceso = invitadoValidado.getTokenAcceso();
             this.asistenciaConfirmada = invitadoValidado.isAsistenciaConfirmada();
 
-            // Sincronización limpia utilizando el ID directo de la reserva
+            // Sincronización limpia utilizando el ID directo de la reserva.
             if (this.reserva != null) {
                 Reserva reservaCompleta = eventoController.obtenerReservaPorId(this.reserva.getId());
                 if (reservaCompleta != null) {
@@ -99,7 +102,7 @@ public class Invitado extends Persona {
             String estadoAsistenciaTexto = asistenciaConfirmada ? "Confirmada." : "Pendiente.";
             String codigoEventoTexto = "<br><b style='color:red;'>Sin código de evento asignado</b>";
             
-            // Se muestra el código siempre que la reserva esté disponible, tal como en el menú de la empresa
+            // Se muestra el código siempre que la reserva esté disponible, tal como en el menú de la empresa.
             if (reserva != null) {
                 String cod = reserva.getCodigoUnicoEvento();
                 String codTexto = (cod != null && !cod.trim().isEmpty()) ? cod : "Sin asignar";
@@ -168,6 +171,7 @@ public class Invitado extends Persona {
             "Confirmar Asistencia.", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
             
         if (opcion == JOptionPane.YES_OPTION) {
+            // CORRECCIÓN: Usa el ID de usuario mapeado correctamente.
             boolean ok = invitadoController.confirmarAsistencia(this.id); 
             if (ok) {
                 this.asistenciaConfirmada = true;
@@ -219,6 +223,7 @@ public class Invitado extends Persona {
     }
 
     private void consultarHabitacion() {
+        // CORRECCIÓN: Pasa el ID correcto.
         Habitacion hab = invitadoController.obtenerHabitacionInvitado(this.id);
         if (hab == null) {
             JOptionPane.showMessageDialog(null, "Aún no se le ha asignado una habitación. Consulte con recepción.", 
@@ -260,11 +265,13 @@ public class Invitado extends Persona {
             return;
         }
         String[] nombresPremios = premios.stream().map(Premio::getNombre).toArray(String[]::new);
-        int sel = JOptionPane.showOptionDialog(null, "Seleccione the premio al que desea participar:", 
+        int sel = JOptionPane.showOptionDialog(null, "Seleccione el premio al que desea participar:", 
                 "Participar en sorteo.", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
                 null, nombresPremios, nombresPremios[0]);
         if (sel >= 0) {
             Premio p = premios.get(sel);
+            
+            // CORRECCIÓN: Aquí ahora pasará el ID de usuario real mapeado en la validación inicial.
             boolean exito = premioController.participarEnSorteo(this.id, p.getId());
             if (exito) {
                 JOptionPane.showMessageDialog(null, "¡Has participado correctamente!", 
@@ -287,6 +294,7 @@ public class Invitado extends Persona {
                 null, nombresPremios, nombresPremios[0]);
         if (sel >= 0) {
             Premio p = premios.get(sel);
+            // CORRECCIÓN: Se utiliza el ID correcto.
             String voucher = premioController.obtenerVoucher(this.id, p.getId()); 
             if (voucher != null && !voucher.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "¡Felicidades!\n\nVoucher: " + voucher + "\nPreséntelo en recepción.", 
@@ -302,8 +310,8 @@ public class Invitado extends Persona {
         JOptionPane.showMessageDialog(null, "No hay información de reserva asociada. Contacte al organizador.", 
                 "Error.", JOptionPane.ERROR_MESSAGE);
     }
-
-    // Getters & Setters
+ // Se debería trabajar con lo del Principio de Responsabilidad Única, o Single-Responsability Principle ( Algo así era en Inglés. )
+    // Getters & Setters.
     public String getApellido() { return apellido; }
     public void setApellido(String apellido) { this.apellido = apellido; }
     public String getDni() { return dni; }

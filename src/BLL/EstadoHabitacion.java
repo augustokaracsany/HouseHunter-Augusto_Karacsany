@@ -9,3 +9,4 @@ public enum EstadoHabitacion {
     // Como todas son dobles pero los invitados se cargan de a uno, tiene que haber un estado intermedio. 
     Completa  // Ocupada al 100%. No entra nadie más.
 }
+// Los pilares...

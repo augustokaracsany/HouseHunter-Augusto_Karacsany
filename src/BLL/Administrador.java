@@ -6,6 +6,9 @@ import DLL.ActividadController; // Controlador para meter asistencias y cronogra
 import DLL.EventoController;    // Controlador para reportes y listas previas.
 import DLL.HabitacionController;// Controlador para check-ins y estados de habitaciones.
 import DLL.PremioController;    // Controlador para ejecutar los sorteos de vouchers. < Hay que trabajar más en esa clase.
+
+import java.util.List;
+
 import javax.swing.ImageIcon;   // Clase de Java para levantar las imágenes estéticas de los menús desde el disco.
 import javax.swing.JOptionPane; // Clase nativa de Java para pintar las ventanas emergentes ( diálogos, inputs, opciones. ).
 
@@ -113,12 +116,13 @@ public class Administrador extends Persona {
         }
     }
 
-    // ( Submenú de Actividades. )
+    // ( Submenú de Actividades. ).
+ // ( Submenú de Actividades - ACTUALIZADO ).
     private void subMenuActividades() {
-    	// Más imagenes.
         ImageIcon iconoActividades = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Actividades.png");
-        // Más arrays de opciones.
-        String[] opciones = {"Monitorear actividades", "Visualizar cronograma", "Actualizar estado", "Entregar premio", "Volver"};
+        
+        // BORRADO: Saqué "Entregar premio" de acá adentro.
+        String[] opciones = {"Monitorear actividades", "Visualizar cronograma", "Actualizar estado", "Volver"};
         
         int op = JOptionPane.showOptionDialog(
             null, "<html><body style='width:250px; text-align:center;'><h3>Control de Eventos</h3>Seleccione una opción:</body></html>", 
@@ -128,66 +132,96 @@ public class Administrador extends Persona {
             iconoActividades, opciones, opciones[0]
         );
         
-        // ( Inputs. )
-        // Agrupo el caso 0 y 2 usando el operador OR (||) porque ambos caminos requieren identificar el evento y tomar asistencia.
+        // El caso 0 y 2 se mantienen igual para tomar asistencia.
         if (op == 0 || op == 2) { 
-            // Pido el código del evento en input. ( Ej: 'EVENTO-1234' ).
             String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Control de Asistencias", JOptionPane.QUESTION_MESSAGE);
-            if (codEvento == null || codEvento.trim().isEmpty()) return; // Corto el flujo con un 'return' si cancela o deja vacío, para evitar NullPointerException. < Esto pasó varias veces ya.
+            if (codEvento == null || codEvento.trim().isEmpty()) return; 
             
-            // Casteo al Singleton de ActividadController para traerme un array de Strings con los nombres de las actividades de ese dichoso evento.
             String[] actividades = ActividadController.getInstance().obtenerNombresActividades(codEvento.trim());
             
-            if (actividades.length == 0) { // Si el array vuelve vacío, es porque el código de evento no existe en MySQL o no tiene actividades asignadas o algo explotó por el camino.
+            if (actividades.length == 0) { 
                 JOptionPane.showMessageDialog(null, "❌ No hay actividades cargadas o el evento no existe.", "Aviso.", JOptionPane.WARNING_MESSAGE);
-                return; // Corto los inputs de forma segura.
+                return; 
             }
             
-            // Menú desplegable para que el admin elija una actividad válida sin chance de errarle al tipeo.
             String actividadSeleccionada = (String) JOptionPane.showInputDialog(
                 null, "Seleccione la actividad a gestionar:", "Monitoreo de Bloques.",
                 JOptionPane.PLAIN_MESSAGE, iconoActividades, actividades, actividades[0]
             );
             
-            if (actividadSeleccionada != null) { // Si seleccionó una actividad y no canceló...
-                // Pido el DNI del invitado.
+            if (actividadSeleccionada != null) { 
                 String dniInvitado = JOptionPane.showInputDialog(null, "Ingrese el DNI del Invitado que asistió:", "Tomar Asistencia.", JOptionPane.QUESTION_MESSAGE);
                 if (dniInvitado != null && !dniInvitado.trim().isEmpty()) {
-                    // Impacto directo en las tablas relacionales mediante el Singleton de Actividades, registrando el presentismo.
                     ActividadController.getInstance().registrarAsistenciaActividad(codEvento.trim(), actividadSeleccionada, dniInvitado.trim());
                 }
             }
             
-        } else if (op == 1) { // Eligió la posición 1 > Visualizar cronograma.
+        } else if (op == 1) { // Visualizar cronograma ( Bien hecho. )
             String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Consultar Cronograma.", JOptionPane.QUESTION_MESSAGE);
             if (codEvento != null && !codEvento.trim().isEmpty()) {
-                // LLamo al Singleton de Actividades para traerme todo el itinerario formateado en HTML para la interfaz.
                 String agendaHtml = ActividadController.getInstance().obtenerCronogramaEventos(codEvento.trim());
                 JOptionPane.showMessageDialog(null, agendaHtml, "Agenda - Evento: " + codEvento.trim(), JOptionPane.PLAIN_MESSAGE, iconoActividades);
             }
-        } else if (op == 3) { // Eligió la posición 3: Entregar premio.
-            subMenuPremio(); // Derivo al submenú específico de sorteos.
         }
+        // BORRADO: El 'else if (op == 3)' pasó a mejor vida.
     }
 
+
     // ( Submenú de Reportes. )
+ // ( Submenú de Reportes - MODIFICADO PARA NO PEDIR CÓDIGO POR TECLADO )
     private void subMenuAdminReportes() {
         ImageIcon iconoReportes = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Reportes.png");
-        String[] opciones = {"Generar reporte de evento.", "Volver."};
+        String[] opciones = {"Generar reporte consolidado.", "Volver."};
         
         int op = JOptionPane.showOptionDialog(
-            null, "<html><body style='width:250px; text-align:center;'><h3>Módulo de Reportes</h3>Seleccione una acción:</body></html>", 
+            null, "<html><body style='width:250px; text-align:center;'><h3>Módulo de Reportes Globales</h3>Seleccione una acción:</body></html>", 
             "Reportes", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
             iconoReportes, opciones, opciones[0]
         );
         
-        if (op == 0) { // Generar reporte estadístico. < Esto estaba en el SRS chicos.
-            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento para consolidar:", "Generar Reporte.", JOptionPane.QUESTION_MESSAGE);
-            if (codEvento != null && !codEvento.trim().isEmpty()) {
-                // Llamo al EventoController mediante su Singleton para hacer un JOIN.
-                String reporteHtml = EventoController.getInstance().obtenerReporteConsolidadoEvento(codEvento.trim());
-                JOptionPane.showMessageDialog(null, reporteHtml, "Métricas del Evento: " + codEvento.trim(), JOptionPane.PLAIN_MESSAGE, iconoReportes);
+        if (op == 0) { 
+            // 1. Traemos todas las reservas de la base de datos
+            List<String[]> listaReservas = EventoController.getInstance().listarTodasLasReservas();
+            
+            if (listaReservas.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "❌ No hay ninguna reserva registrada en el hotel.", "Reportes Vacíos", JOptionPane.WARNING_MESSAGE);
+                return;
             }
+            
+            // 2. Mapeamos las reservas a un formato lindo para el menú desplegable
+            String[] opcionesDesplegable = new String[listaReservas.size()];
+            for (int i = 0; i < listaReservas.size(); i++) {
+                String[] res = listaReservas.get(i);
+                // Ejemplo: "[ID: 1] - Empresa: Accenture (Ref: EVENTO-4512)"
+                opcionesDesplegable[i] = "[ID: " + res[0] + "] - " + res[1] + " (Ref: " + res[2] + ")";
+            }
+            
+            // 3. Mostramos el combo desplegable seguro
+            String seleccionReserva = (String) JOptionPane.showInputDialog(
+                null, "Seleccione la reserva que desea auditar:", "Selector de Informes",
+                JOptionPane.PLAIN_MESSAGE, iconoReportes, opcionesDesplegable, opcionesDesplegable[0]
+            );
+            
+            // Si el admin cancela o cierra la ventana, salimos elegantemente
+            if (seleccionReserva == null) return;
+            
+            // 4. Averiguamos qué índice seleccionó para extraer el código_unico_evento real
+            int indexSeleccionado = -1;
+            for (int i = 0; i < opcionesDesplegable.length; i++) {
+                if (opcionesDesplegable[i].equals(seleccionReserva)) {
+                    indexSeleccionado = i;
+                    break;
+                }
+            }
+            
+            // Extraemos el código único del evento oculto en el array del índice seleccionado (posición 2)
+            String codEventoReal = listaReservas.get(indexSeleccionado)[2];
+            
+            // 5. Invocamos al reporte consolidado usando el código mapeado de forma automática
+            String reporteHtml = EventoController.getInstance().obtenerReporteConsolidadoAdministrador(codEventoReal);
+            
+            // Pintamos el Dashboard final en la pantalla del administrador
+            JOptionPane.showMessageDialog(null, reporteHtml, "Métricas Consolidadas - Reserva ID: " + listaReservas.get(indexSeleccionado)[0], JOptionPane.PLAIN_MESSAGE, iconoReportes);
         }
     }
 
@@ -262,29 +296,7 @@ public class Administrador extends Persona {
         HabitacionController.getInstance().procesarCheckInHabitacion(codEvento.trim(), dniInvitado.trim(), numHabitacion.trim());
     }
 
-    // ( Submenú de Premios & Sorteos. )
-    private void subMenuPremio() {
-        ImageIcon iconoActividades = new ImageIcon("src/img/HouseHunter_Menu-Administrador_Actividades.png");
-        String[] sub = {"Lanzar Sorteo de Evento", "Volver"}; 
-        
-        int op = JOptionPane.showOptionDialog( 
-            null, "<html><body style='width:250px; text-align:center;'><h3>Entrega de Premios</h3>Seleccione una operación:</body></html>", 
-            "Submenú Premios", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, 
-            iconoActividades, sub, sub[0]
-        );
-        
-        if (op == 0) {  // Lanzar Sorteo de Evento.
-            String codEvento = JOptionPane.showInputDialog(null, "Ingrese el Código Único del Evento:", "Configurar Sorteo", JOptionPane.QUESTION_MESSAGE);
-            if (codEvento == null || codEvento.trim().isEmpty()) return;
-            
-            String descripcionPremio = JOptionPane.showInputDialog(null, "Ingrese la descripción del Premio (Ej: Voucher Estadía 5 Estrellas):", "Detalle del Premio", JOptionPane.QUESTION_MESSAGE);
-            if (descripcionPremio == null || descripcionPremio.trim().isEmpty()) return;
-            
-            // Casteo al PremioController mediante su Singleton para correr la consulta SQL aleatoria ( ORDER BY RAND() ) que elige al ganador.
-            PremioController.getInstance().ejecutarSorteoPremio(codEvento.trim(), descripcionPremio.trim());
-        }
-    }
-
+    
     // ( Método de Alerta Genérica. )
     private void mostrarMensaje(String accion) {
         // Método genérico por si quedó alguna opción vieja cableada o en desarrollo. Muestra un aviso informativo en pantalla. Se eliminará cuando corresponda, por las dudas. - Augusto.

@@ -6,8 +6,7 @@ import java.sql.*;
 import java.util.LinkedList;
 
 public class UsuariosController extends UsuariosRepository {
-
-    // Método enfocado puramente en persistencia: busca y arma el objeto si el mail existe.
+// Rompí todo, genial.
     public Persona obtenerUsuarioPorEmail(String email) {
         Persona usuario = null;
         String sql = "SELECT u.*, p.dni, p.nombre, p.apellido, e.cuit, e.razon_social " +
@@ -25,7 +24,7 @@ public class UsuariosController extends UsuariosRepository {
                 if (rs.next()) {
                     Rol rolEnum = Rol.valueOf(rs.getString("rol"));
                     String mail = rs.getString("email");
-                    String passBD = rs.getString("password"); // Recuperamos el hash de la BD.
+                    String passBD = rs.getString("password"); 
 
                     if (rolEnum == Rol.EMPRESA) {
                         usuario = new Empresa(mail, passBD, rs.getString("cuit"), rs.getString("razon_social"), rolEnum);
@@ -33,22 +32,24 @@ public class UsuariosController extends UsuariosRepository {
                         String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
                         usuario = new Administrador(mail, passBD, nombreCompleto, rs.getString("dni"), rolEnum);
                     } else {
-                        usuario = new Invitado(mail, passBD, rs.getString("nombre"), rolEnum);
+                        // CORRECCIÓN: Armamos el Invitado con toda la data disponible de la persona centralizada.
+                        Invitado inv = new Invitado(mail, passBD, rs.getString("nombre"), rolEnum);
+                        inv.setApellido(rs.getString("apellido"));
+                        inv.setDni(rs.getString("dni"));
+                        usuario = inv;
                     }
                     
-                    usuario.setId(rs.getInt("id"));
+                    usuario.setId(rs.getInt("id")); // Este es el ID de la tabla 'usuarios'
                 }
             }
         } catch (SQLException e) {
             System.err.println("Error al buscar usuario por email: " + e.getMessage());
         }
-        return usuario; // Puede devolver la entidad armada o null si el mail no existe.
+        return usuario; 
     }
 
     @Override
     public Persona login(String email, String password) {
-        // Podés dejar este método heredado llamando directamente al nuevo esquema o 
-        // dejarlo deprecado, pero la lógica de control migra al AutenticacionController.
         return null; 
     }
 
@@ -77,7 +78,10 @@ public class UsuariosController extends UsuariosRepository {
                     String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
                     p = new Administrador(mail, pass, nombreCompleto, rs.getString("dni"), rolEnum);
                 } else {
-                    p = new Invitado(mail, pass, rs.getString("nombre"), rolEnum);
+                    Invitado inv = new Invitado(mail, pass, rs.getString("nombre"), rolEnum);
+                    inv.setApellido(rs.getString("apellido"));
+                    inv.setDni(rs.getString("dni"));
+                    p = inv;
                 }
                 
                 p.setId(rs.getInt("id"));
@@ -95,11 +99,11 @@ public class UsuariosController extends UsuariosRepository {
         Connection con = ConexionController.getInstance().getConnection();
         
         try {
-            con.setAutoCommit(false); // Transacción atómica segura para evitar datos huérfanos.
+            con.setAutoCommit(false); 
             
             try (PreparedStatement psUser = con.prepareStatement(sqlUsuario, Statement.RETURN_GENERATED_KEYS)) {
                 psUser.setString(1, email);
-                psUser.setString(2, Hashing.hash(password)); // El hash en el alta es correcto acá antes de persistir.
+                psUser.setString(2, Hashing.hash(password)); 
                 psUser.setString(3, rol.toString());
                 
                 int filasAfectadas = psUser.executeUpdate();

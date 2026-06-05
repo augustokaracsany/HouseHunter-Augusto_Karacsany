@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections; // Agregado para mezclar la lista en el sorteo.
 
 public class EmpresaMenu {
     private Empresa empresa;
@@ -85,8 +86,7 @@ public class EmpresaMenu {
 
     private void subMenuGestionEvento() {
         ImageIcon iconoGestion = new ImageIcon("src/img/HouseHunter_Menu-Empresa_Gestion.png");
-        // Agregamos la opción de editar código único en el arreglo de botones
-        String[] opciones = {"REALIZAR RESERVA.", "CARGAR INVITADOS.", "SELECCIONAR PLANTILLA.", "EDITAR CÓDIGO ÚNICO.", "VOLVER."};
+        String[] opciones = {"REALIZAR RESERVA.", "CARGAR INVITADOS.", "SELECCIONAR PLANTILLA.", "EDITAR CÓDIGO ÚNICO.", "GESTIONAR PREMIOS.", "VOLVER."};
         
         int op = JOptionPane.showOptionDialog(
             null, "<html><body style='width:250px; text-align:center;'><h3>Módulo de Eventos</h3>Seleccione una acción:</body></html>", 
@@ -102,6 +102,128 @@ public class EmpresaMenu {
             seleccionarPlantilla();
         } else if (op == 3) {
             editarCodigoUnicoEvento();
+        } else if (op == 4) {
+            subMenuPremios();
+        }
+    }
+
+    // MODIFICADO: Agregada la opción de "Realizar Sorteo" al arreglo.
+    private void subMenuPremios() {
+        if (!asegurarReservaSeleccionada()) return;
+
+        String[] opcionesPremios = {"Crear Premio", "Listar Premios", "Realizar Sorteo", "Volver"};
+        int op;
+        do {
+            op = JOptionPane.showOptionDialog(
+                null, "<html><body style='width:250px; text-align:center;'><h3>Gestión de Premios</h3>Seleccione una opción:</body></html>",
+                "Premios del Evento", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
+                null, opcionesPremios, opcionesPremios[0]
+            );
+
+            if (op == 0) {
+                crearPremio();
+            } else if (op == 1) {
+                listarPremios();
+            } else if (op == 2) {
+                ejecutarSorteoDePremio(); // <-- NUEVO MÉTODO LLAMADO ACÁ.
+            }
+        } while (op != 3 && op != -1);
+    }
+
+    private void crearPremio() {
+        String nombre = JOptionPane.showInputDialog(null, "Nombre del premio/recompensa:", "Nuevo Premio", JOptionPane.QUESTION_MESSAGE);
+        if (nombre == null || nombre.trim().isEmpty()) return;
+
+        String desc = JOptionPane.showInputDialog(null, "Descripción del premio:", "Nuevo Premio", JOptionPane.QUESTION_MESSAGE);
+        if (desc == null) desc = "";
+
+        String stockStr = JOptionPane.showInputDialog(null, "Cantidad disponible (Stock):", "Nuevo Premio", JOptionPane.QUESTION_MESSAGE);
+        if (stockStr == null) return;
+
+        try {
+            int stock = Integer.parseInt(stockStr.trim());
+            if (stock < 0) {
+                JOptionPane.showMessageDialog(null, "El stock no puede ser negativo.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (service.guardarPremio(nombre.trim(), desc.trim(), stock)) {
+                JOptionPane.showMessageDialog(null, "Premio registrado con éxito para este evento.");
+            } else {
+                JOptionPane.showMessageDialog(null, "Error al guardar el premio en la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Por favor, ingrese un número válido para el stock.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void listarPremios() {
+        List<String> premios = service.obtenerPremios();
+        if (premios.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay premios cargados para esta reserva.", "Premios Vacíos", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder("Premios del Evento:\n");
+        for (String p : premios) {
+            sb.append(p).append("\n");
+        }
+        JOptionPane.showMessageDialog(null, sb.toString(), "Lista de Premios", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    // NUEVO MÉTODO: Ejecuta la selección aleatoria e interactúa con el Service.
+    private void ejecutarSorteoDePremio() {
+        // 1. En lugar de listar Strings, llamá a un método que te traiga los objetos Premio de la BD.
+        List<BLL.Premio> premiosDisponibles = service.listarPremiosObjetosDisponibles();
+        if (premiosDisponibles.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay premios registrados o disponibles para sortear.", "Sorteo Vacío", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Armamos el array de opciones visuales para el panel.
+        String[] opcionesPremios = premiosDisponibles.stream()
+            .map(p -> "ID: " + p.getId() + " - " + p.getNombre())
+            .toArray(String[]::new);
+
+        String seleccion = (String) JOptionPane.showInputDialog(
+            null, "Seleccione qué premio desea sortear en este momento:", "Módulo de Sorteos",
+            JOptionPane.QUESTION_MESSAGE, null, opcionesPremios, opcionesPremios[0]
+        );
+
+        if (seleccion == null) return;
+
+        // Extraemos el ID numérico real de forma segura de la opción seleccionada
+        int idPremioSeleccionado = Integer.parseInt(seleccion.split(" - ")[0].replace("ID: ", "").trim());
+        BLL.Premio premioElegido = premiosDisponibles.stream()
+            .filter(p -> p.getId() == idPremioSeleccionado)
+            .findFirst().orElse(null);
+
+        // 2. Buscamos los postulados usando el ID que es 100% preciso
+        List<Invitado> postulados = service.obtenerPostuladosPorPremio(idPremioSeleccionado);
+
+        if (postulados == null || postulados.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "No hay ningún invitado postulado y verificado como elegible para el premio:\n" + premioElegido.getNombre(), "Sin participantes", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        // Algoritmo de azar
+        Collections.shuffle(postulados);
+        Invitado ganador = postulados.get(0);
+
+        // Mandamos a registrar al ganador usando los IDs correspondientes
+        boolean exitoPersistencia = service.registrarGanadorSorteo(ganador.getId(), premioElegido.getId());
+
+        if (exitoPersistencia) {
+            String mensajeGanador = String.format(
+                "¡¡ TENEMOS UN GANADOR !!\n\n" +
+                "Premio sorteado: %s\n" +
+                "Ganador: %s\n\n" +
+                "El voucher y estado de entrega ya han sido asentados.",
+                premioElegido.getNombre(), ganador.getNombre()
+            );
+            JOptionPane.showMessageDialog(null, mensajeGanador, "SORTEO EXITOSO", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(null, "Error al procesar el ganador en la BD.", "Error de Consistencia", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -286,7 +408,7 @@ public class EmpresaMenu {
                 a.getCategoria(),
                 a.getImportancia()
             );
-            JOptionPane.showMessageDialog(null, detalle, "Detaille de la Actividad (Vista Empresa)", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(null, detalle, "Detalle de la Actividad (Vista Empresa)", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -320,7 +442,7 @@ public class EmpresaMenu {
             }
             
             if (service.guardarActividad(nombre, desc, importanciaStr, categoria, horaFormateada)) {
-                JOptionPane.showMessageDialog(null, "Actividad agregada al cronograma con éxito.");
+                JOptionPane.showMessageDialog(null, "Actividad agregó al cronograma con éxito.");
             } else {
                 JOptionPane.showMessageDialog(null, "Error al insertar la actividad en la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
             }

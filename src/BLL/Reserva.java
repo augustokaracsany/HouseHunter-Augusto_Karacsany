@@ -31,7 +31,7 @@ public class Reserva {
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
         this.cantidadEstimadaAsistentes = cantidadEstimadaAsistentes;
-        this.codigoUnicoEvento = "GENERANDO..."; // Valor por defecto inicial
+        this.codigoUnicoEvento = "GENERANDO..."; // Valor por defecto inicial.
     }
     
     // ( Getters y Setters )

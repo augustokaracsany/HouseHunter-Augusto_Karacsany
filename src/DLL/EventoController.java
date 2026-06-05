@@ -21,7 +21,7 @@ public class EventoController {
         return instance;
     }
 
-    // ( Validación de Rango de Fechas )
+    // ( Validación de Rango de Fechas. ).
     // Consulta la base de datos para ver si ya existe una reserva activa que colisione con el rango solicitado.
     public boolean verificarDisponibilidad(LocalDate fechaInicio, LocalDate fechaFin) {
         String sql = "SELECT COUNT(*) FROM reservas_hotel WHERE NOT (fecha_fin < ? OR fecha_inicio > ?)";
@@ -291,6 +291,57 @@ public class EventoController {
             return "<html><body>❌ Error técnico al compilar reportes: " + e.getMessage() + "</body></html>";
         }
     }
+    public String obtenerReporteConsolidadoAdministrador(String codigoEvento) {
+        StringBuilder sb = new StringBuilder();
+        // CORREGIDO: Nombres de columnas reales según tu script de BD
+        String sql = 
+            "SELECT rh.id AS id_reserva, de.razon_social, rh.fecha_inicio, rh.fecha_fin, " +
+            "  (SELECT COUNT(*) FROM actividades WHERE id_reserva = rh.id) AS total_actividades, " +
+            "  (SELECT COUNT(*) FROM asistencias_actividades aa JOIN actividades act ON aa.id_actividad = act.id WHERE act.id_reserva = rh.id AND aa.asistio = 'S') AS total_asistencias, " +
+            "  (SELECT COUNT(*) FROM lista_invitados_previa WHERE id_reserva = rh.id) AS total_invitados, " +
+            "  (SELECT COUNT(*) FROM asignaciones_habitaciones WHERE id_reserva = rh.id) AS habitaciones_ocupadas, " +
+            "  (SELECT COUNT(*) FROM premios WHERE id_reserva = rh.id) AS total_premios, " +
+            "  (SELECT COUNT(*) FROM participaciones_premios pp JOIN premios pr ON pp.id_premio = pr.id WHERE pr.id_reserva = rh.id AND pp.ganador = 1) AS premios_entregados " +
+            "FROM reservas_hotel rh " +
+            "JOIN datos_empresas de ON rh.id_empresa = de.id_usuario " +
+            "WHERE rh.codigo_unico_evento = ?";
+
+        Connection con = ConexionController.getInstance().getConnection();
+        
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, codigoEvento);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    sb.append("<html><body style='width: 380px; font-family: Arial, sans-serif;'>");
+                    sb.append("<h2 style='text-align: center; color: #2C3E50; margin-bottom: 5px;'>📊 CONTROL CONSOLIDADO (ADMIN)</h2>");
+                    sb.append("<p style='text-align: center; margin-top: 0px; color: #7F8C8D;'><b>Evento:</b> ").append(codigoEvento).append("</p>");
+                    sb.append("<hr style='border: 1px solid #34495E;'>");
+                    
+                    sb.append("<h3>Datos de la Reserva</h3>");
+                    sb.append("<b>Empresa Organizadora:</b> ").append(rs.getString("razon_social")).append("<br>");
+                    sb.append("<b>Estadía:</b> ").append(rs.getString("fecha_inicio")).append(" al ").append(rs.getString("fecha_fin")).append("<br>");
+                    
+                    sb.append("<br><table style='width: 100%; border-collapse: collapse;'>");
+                    
+                    sb.append("<tr style='background-color: #ECF0F1;'><td style='padding: 5px;'><b>Total Invitados:</b></td><td style='padding: 5px; text-align: right;'><b>").append(rs.getInt("total_invitados")).append("</b></td></tr>");
+                    sb.append("<tr><td style='padding: 5px;'><b>Habitaciones Asignadas:</b></td><td style='padding: 5px; text-align: right; color: green;'><b>").append(rs.getInt("habitaciones_ocupadas")).append("</b></td></tr>");
+                    sb.append("<tr style='background-color: #ECF0F1;'><td style='padding: 5px;'><b>Actividades en Agenda:</b></td><td style='padding: 5px; text-align: right;'><b>").append(rs.getInt("total_actividades")).append("</b></td></tr>");
+                    sb.append("<tr><td style='padding: 5px;'><b>Presentes en Actividades:</b></td><td style='padding: 5px; text-align: right; color: blue;'><b>").append(rs.getInt("total_asistencias")).append("</b></td></tr>");
+                    sb.append("<tr style='background-color: #ECF0F1;'><td style='padding: 5px;'><b>Tipos de Premios:</b></td><td style='padding: 5px; text-align: right;'><b>").append(rs.getInt("total_premios")).append("</b></td></tr>");
+                    sb.append("<tr><td style='padding: 5px;'><b>Vouchers Entregados:</b></td><td style='padding: 5px; text-align: right; color: orange;'><b>").append(rs.getInt("premios_entregados")).append("</b></td></tr>");
+                    
+                    sb.append("</table></body></html>");
+                    return sb.toString();
+                } else {
+                    return "<html><body>❌ Código de evento inexistente.</body></html>";
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error en query de reporte: " + e.getMessage());
+            return "<html><body>❌ Error técnico en el reporte de administración.</body></html>";
+        }
+    }
 
     // Recupera una reserva específica mediante el ID de usuario de la empresa y su código único, cargando sus actividades
     public Reserva obtenerReservaActivaPorCodigo(int idUsuarioEmpresa, String codigoEvento) {
@@ -349,5 +400,29 @@ public class EventoController {
             System.err.println("Error al recuperar la reserva por su ID: " + e.getMessage());
         }
         return null;
+    }
+    public List<String[]> listarTodasLasReservas() {
+        List<String[]> reservas = new ArrayList<>();
+        // CORREGIDO: Buscamos razon_social haciendo JOIN con datos_empresas
+        String sql = "SELECT rh.id, de.razon_social, rh.codigo_unico_evento " +
+                     "FROM reservas_hotel rh " +
+                     "JOIN datos_empresas de ON rh.id_empresa = de.id_usuario " +
+                     "ORDER BY rh.id DESC";
+        
+        Connection con = ConexionController.getInstance().getConnection();
+        try (PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            
+            while (rs.next()) {
+                reservas.add(new String[]{
+                    String.valueOf(rs.getInt("id")),
+                    rs.getString("razon_social"), // Mapeado correctamente
+                    rs.getString("codigo_unico_evento")
+                });
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al listar reservas para reportes: " + e.getMessage());
+        }
+        return reservas;
     }
 }

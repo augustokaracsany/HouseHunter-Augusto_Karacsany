@@ -13,7 +13,7 @@ public class ConexionController {
     private ConexionController() {
         conectar();
     }
-
+ // En teoría con una sola conexión alcanza para el TP.
     // Gestiona el puente de comunicación físico con el motor MySQL mediante el Driver JDBC.
     private void conectar() {
         try {
@@ -21,13 +21,13 @@ public class ConexionController {
             conect = DriverManager.getConnection("jdbc:mysql://localhost:3306/househunter", "root", "");
             System.out.println(">> Conexión Establecida con Éxito a la Base de Datos.");
         } catch (SQLException e) {
-            System.err.println(">> ERROR de conexión: " + e.getMessage());
+            System.err.println(">> ERROR de conexión: " + e.getMessage()); // No tocar mucho esto que después JDBC se pone en modo violento.
             conect = null; // Resetea el puntero a null para que los métodos de control reconozcan el estado fallido.
         }
     }
 
     // Garantiza que exista una sola instancia de ConexionController en memoria.
-    public static ConexionController getInstance() {
+    public static ConexionController getInstance() { 
         if (instance == null) instance = new ConexionController();
         return instance;
     }

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 04-06-2026 a las 16:53:37
+-- Tiempo de generación: 05-06-2026 a las 02:31:29
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -71,7 +71,8 @@ CREATE TABLE `asignaciones_habitaciones` (
 INSERT INTO `asignaciones_habitaciones` (`id`, `id_reserva`, `id_habitacion`, `id_usuario`, `casillero_checkin`, `fecha_registro`) VALUES
 (1, 1, 1, 1, '1', '2026-05-28 14:49:55'),
 (2, 1, 1, 3, '2', '2026-05-28 14:50:41'),
-(3, 2, 2, 4, '1', '2026-06-04 14:49:21');
+(3, 2, 2, 4, '1', '2026-06-04 14:49:21'),
+(4, 1, 3, 11, '1', '2026-06-04 23:13:49');
 
 -- --------------------------------------------------------
 
@@ -91,7 +92,9 @@ CREATE TABLE `asistencias_actividades` (
 --
 
 INSERT INTO `asistencias_actividades` (`id`, `id_actividad`, `id_usuario`, `asistio`) VALUES
-(2, 12, 4, 'S');
+(2, 12, 4, 'S'),
+(3, 8, 11, 'S'),
+(4, 10, 11, 'S');
 
 -- --------------------------------------------------------
 
@@ -137,7 +140,8 @@ INSERT INTO `datos_personas` (`id_usuario`, `dni`, `nombre`, `apellido`, `celula
 (6, '12345678', 'Robert', 'Trebor', NULL),
 (8, '99888777', 'Alfonso', 'Gutierrez', '4745450955'),
 (9, '11222333', 'Eustaquio', 'Ramirez', NULL),
-(10, '12345666', 'Michael', 'Schumacher', NULL);
+(10, '12345666', 'Michael', 'Schumacher', NULL),
+(11, '55544433', 'TEST', 'TEST', NULL);
 
 -- --------------------------------------------------------
 
@@ -148,6 +152,8 @@ INSERT INTO `datos_personas` (`id_usuario`, `dni`, `nombre`, `apellido`, `celula
 CREATE TABLE `habitaciones` (
   `id` int(11) NOT NULL,
   `numero` varchar(10) NOT NULL,
+  `tipo` varchar(50) NOT NULL DEFAULT 'Standard',
+  `capacidad` int(11) NOT NULL DEFAULT 2,
   `estado` enum('Libre','Half','Completa') DEFAULT 'Libre'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -155,13 +161,13 @@ CREATE TABLE `habitaciones` (
 -- Volcado de datos para la tabla `habitaciones`
 --
 
-INSERT INTO `habitaciones` (`id`, `numero`, `estado`) VALUES
-(1, '101', 'Completa'),
-(2, '102', 'Half'),
-(3, '103', 'Libre'),
-(4, '201', 'Libre'),
-(5, '202', 'Libre'),
-(6, '203', 'Libre');
+INSERT INTO `habitaciones` (`id`, `numero`, `tipo`, `capacidad`, `estado`) VALUES
+(1, '101', 'Standard', 2, 'Completa'),
+(2, '102', 'Standard', 2, 'Half'),
+(3, '103', 'Standard', 2, 'Half'),
+(4, '201', 'Standard', 2, 'Libre'),
+(5, '202', 'Standard', 2, 'Libre'),
+(6, '203', 'Standard', 2, 'Libre');
 
 -- --------------------------------------------------------
 
@@ -186,13 +192,14 @@ CREATE TABLE `lista_invitados_previa` (
 --
 
 INSERT INTO `lista_invitados_previa` (`id`, `id_reserva`, `dni`, `nombre`, `apellido`, `celular`, `dni_companero`, `token_acceso`, `asistencia_confirmada`) VALUES
-(1, 1, '44555666', 'Luca', 'Borrelli', '1122334455', '44728397', '2281', 'N'),
-(2, 1, '44728397', 'Franco', 'Colapinto', '1155667788', '44555666', '4728', 'N'),
-(3, 1, '12345678', 'Robert', 'Trebor', '1199887766', '0', '6890', 'N'),
-(4, 1, '99888777', 'Alfonso Gutierrez', '', '4745450955', '', '3510', 'N'),
-(5, 1, '11222333', 'Eustaquio Ramirez', '', '', '', '1695', 'N'),
+(1, 1, '44555666', 'Luca', 'Borrelli', '1122334455', '44728397', '7520', 'N'),
+(2, 1, '44728397', 'Franco', 'Colapinto', '1155667788', '44555666', '1062', 'N'),
+(3, 1, '12345678', 'Robert', 'Trebor', '1199887766', '0', '3624', 'N'),
+(4, 1, '99888777', 'Alfonso Gutierrez', '', '4745450955', '', '8726', 'N'),
+(5, 1, '11222333', 'Eustaquio Ramirez', '', '', '', '7699', 'N'),
 (6, 2, '47299224', 'Augusto Karacsany', '', '', '', '6311', 'N'),
-(7, 2, '44728397', 'Franco Colapinto', '', '', '', '3019', 'S');
+(7, 2, '44728397', 'Franco Colapinto', '', '', '', '3019', 'S'),
+(8, 1, '55544433', 'TEST TEST', '', '', '', '8993', 'S');
 
 -- --------------------------------------------------------
 
@@ -223,6 +230,16 @@ CREATE TABLE `participaciones_premios` (
   `ganador` tinyint(1) NOT NULL DEFAULT 0,
   `voucher` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `participaciones_premios`
+--
+
+INSERT INTO `participaciones_premios` (`id`, `id_invitado`, `id_premio`, `elegible`, `ganador`, `voucher`) VALUES
+(3, 4, 1, 0, 0, NULL),
+(4, 11, 1, 1, 1, 'VOU-11-778'),
+(5, 11, 3, 1, 0, NULL),
+(6, 11, 2, 1, 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -262,6 +279,15 @@ CREATE TABLE `premios` (
   `entregado` char(1) DEFAULT 'N',
   `id_ganador_usuario` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `premios`
+--
+
+INSERT INTO `premios` (`id`, `id_reserva`, `nombre_premio`, `descripcion`, `cantidad_disponible`, `activo`, `entregado`, `id_ganador_usuario`) VALUES
+(1, 1, 'Viaje a Miame', 'Un viaje a miame, cuantos queres', 0, 1, 'N', NULL),
+(2, 2, 'Viaje a Bosnia', 'Un viaje a Bosnia, ida y vuelta.', 2, 1, 'N', NULL),
+(3, 1, 'Viaje a Italia', 'Un viaje a Italia, sin retorno.', 1, 1, 'N', NULL);
 
 -- --------------------------------------------------------
 
@@ -315,7 +341,8 @@ INSERT INTO `usuarios` (`id`, `email`, `password`, `rol`, `asistencia_confirmada
 (6, 'Robert@gmail.com', '$2a$10$vQNuD3WE0qG5r.yeGE2Bvu1qMRJKvzS/aXuz0y0nNJOsRxwc5m94i', 'INVITADO', 'N', NULL),
 (8, 'invitado9@gmail.com', '$2a$10$DdEv1MMiV7y4lIY9V4/arO8PUdc5PaOg5O2il.MnxbOZ3Blb1kxpy', 'INVITADO', 'N', NULL),
 (9, 'invitado10@gmail.com', '$2a$10$sxGcXNaIN2aI5C3z5knUJuLmkSbYeU.Gp/Akh/06VcyZAJlm1S9Uu', 'INVITADO', 'N', NULL),
-(10, 'invitado7@gmail.com', '$2a$10$Y4MLKEh9Ut3cUHDRNqGYh.WIUNiVVU5rM5mF/XnINyIbeBTkgv.Sm', 'INVITADO', 'N', NULL);
+(10, 'invitado7@gmail.com', '$2a$10$Y4MLKEh9Ut3cUHDRNqGYh.WIUNiVVU5rM5mF/XnINyIbeBTkgv.Sm', 'INVITADO', 'N', NULL),
+(11, 'invitado11@gmail.com', '$2a$10$W5KOCywuiSz32DPt39itmesjpUk84z4u4pNlFIWawqnMDcgTDdG6S', 'INVITADO', 'S', '2026-06-04 20:17:03');
 
 --
 -- Índices para tablas volcadas
@@ -433,13 +460,13 @@ ALTER TABLE `actividades`
 -- AUTO_INCREMENT de la tabla `asignaciones_habitaciones`
 --
 ALTER TABLE `asignaciones_habitaciones`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `asistencias_actividades`
 --
 ALTER TABLE `asistencias_actividades`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT de la tabla `habitaciones`
@@ -451,7 +478,7 @@ ALTER TABLE `habitaciones`
 -- AUTO_INCREMENT de la tabla `lista_invitados_previa`
 --
 ALTER TABLE `lista_invitados_previa`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `opiniones_feedback`
@@ -463,7 +490,7 @@ ALTER TABLE `opiniones_feedback`
 -- AUTO_INCREMENT de la tabla `participaciones_premios`
 --
 ALTER TABLE `participaciones_premios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `plantillas`
@@ -475,7 +502,7 @@ ALTER TABLE `plantillas`
 -- AUTO_INCREMENT de la tabla `premios`
 --
 ALTER TABLE `premios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT de la tabla `reservas_hotel`
@@ -487,7 +514,7 @@ ALTER TABLE `reservas_hotel`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Restricciones para tablas volcadas

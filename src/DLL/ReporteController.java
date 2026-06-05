@@ -27,7 +27,7 @@ public class ReporteController {
             int totalEsperado = 0;
             int totalConfirmados = 0;
 
-            // 1. Obtener Total Invitados Esperados
+            // 1. Obtener Total Invitados Esperados.
             try (PreparedStatement ps = con.prepareStatement(sqlTotalExpectativa)) {
                 ps.setInt(1, idReserva);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -37,7 +37,7 @@ public class ReporteController {
                 }
             }
 
-            // 2. Obtener Invitados Confirmados Reales (Los que marcaron 'S')
+            // 2. Obtener Invitados Confirmados Reales ( Los que marcaron 'S'. ).
             try (PreparedStatement ps = con.prepareStatement(sqlConfirmadosReales)) {
                 ps.setInt(1, idReserva);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -47,15 +47,15 @@ public class ReporteController {
                 }
             }
 
-            // Guardamos los totales en el Map de retorno
+            // Guardamos los totales en el Map de retorno.
             reporte.put("totalInvitados", totalEsperado);
             reporte.put("confirmados", totalConfirmados);
 
-            // Calcular porcentaje de confirmación real evitando la división por cero
+            // Calcular porcentaje de confirmación real evitando la división por cero.
             double porcentaje = totalEsperado > 0 ? (totalConfirmados * 100.0 / totalEsperado) : 0;
             reporte.put("porcentajeConfirmacion", Math.round(porcentaje * 100.0) / 100.0);
             
-            // 3. Cantidad de Actividades Programadas
+            // 3. Cantidad de Actividades Programadas.
             try (PreparedStatement ps = con.prepareStatement(sqlActividades)) {
                 ps.setInt(1, idReserva);
                 try (ResultSet rs = ps.executeQuery()) {
