@@ -18,7 +18,7 @@ public class Administrador extends Persona {
     // ( Atributos Propios. )
     private String dni;            // DNI exclusivo del administrador.
     private String nombreCompleto; // Nombre y apellido del admin logueado para mostrar en los menús.
-
+ // Se debería trabajar con lo del Principio de Responsabilidad Única, o Single-Responsability Principle ( Algo así era en Inglés. )
     // ( Constructor. )
     public Administrador(String email, String password, String nombreCompleto, String dni, Rol rol) {
         super(email, password, rol); 
@@ -53,7 +53,7 @@ public class Administrador extends Persona {
             "CERRAR SESIÓN"
         };
 
-        int seleccion; // Entero para guardar el botón que el usuario clickeé (0, 1, 2, 3).
+        int seleccion; // Entero para guardar el botón que el usuario clickeé ( 0, 1, 2, 3 ).
         
         // ( Bucle do-while. )
         // Uso do-while para garantizar que el menú se pinte al menos UNA VEZ, y se repita cíclicamente hasta que se elija salir.

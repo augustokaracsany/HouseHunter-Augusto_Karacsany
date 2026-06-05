@@ -84,7 +84,7 @@ public class Main {
                             } else {
                                 dato1 = JOptionPane.showInputDialog(null, "Ingrese su Nombre:", "Datos Invitado", JOptionPane.QUESTION_MESSAGE);
                                 dato2 = JOptionPane.showInputDialog(null, "Ingrese su Apellido:", "Datos Invitado", JOptionPane.QUESTION_MESSAGE);
-                                dato3 = JOptionPane.showInputDialog(null, "Ingrese su DNI:", "Datos Invitado", JOptionPane.QUESTION_MESSAGE); // 🚀 Captura segura del DNI.
+                                dato3 = JOptionPane.showInputDialog(null, "Ingrese su DNI:", "Datos Invitado", JOptionPane.QUESTION_MESSAGE); // Captura segura del DNI.
                             }
 
                             // Validación estructural de datos antes de disparar el controlador.

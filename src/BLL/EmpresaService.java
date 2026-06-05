@@ -156,9 +156,6 @@ public class EmpresaService {
         );
     }
  // Dentro de BLL.EmpresaService.java.
-
- 
-
     public List<String> obtenerPremios() {
         List<String> listaPremios = new ArrayList<>();
         
@@ -243,7 +240,7 @@ public class EmpresaService {
                      "JOIN premios p ON pp.id_premio = p.id " +
                      "WHERE p.id = ? AND p.id_reserva = ? AND pp.elegible = 1 AND pp.ganador = 0";
 
-        // REFACTOR CRÍTICO: Incluimos la 'con' dentro del try para que se cierre sola y limpie el hilo de MySQL.
+        // REFACTOR CRÍTICO: 'con' dentro del try para que se cierre sola y limpie el hilo de MySQL.
         try (Connection con = DLL.ConexionController.getInstance().getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             
