@@ -85,19 +85,19 @@ public class EmpresaMenuGrafico extends JFrame {
 		panel_1.setLayout(null);
 		
 		JLabel lblNewLabel = new JLabel("");
-		lblNewLabel.setBounds(0, 0, 400, 300);
+		lblNewLabel.setBounds(0, 0, 400, 351);
 		panel_1.add(lblNewLabel);
 		lblNewLabel.setIcon(new ImageIcon(EmpresaMenuGrafico.class.getResource("/img/HouseHunter_Menu-Empresa.png")));
 		
 		JPanel panel = new JPanel();
 		panel.setAlignmentX(Component.LEFT_ALIGNMENT);
-		panel.setBackground(SystemColor.controlShadow);
+		panel.setBackground(SystemColor.menu);
 		panel.setPreferredSize(new Dimension(10, 100));
 		contentPane.add(panel, BorderLayout.SOUTH);
 		panel.setLayout(null);
 		
 		JButton btnPlanificacin_1 = new JButton("RESERVAS.");
-		btnPlanificacin_1.setBounds(946, 44, 112, 45);
+		btnPlanificacin_1.setBounds(143, 55, 112, 45);
 		panel.add(btnPlanificacin_1);
 		btnPlanificacin_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -107,7 +107,7 @@ public class EmpresaMenuGrafico extends JFrame {
 		btnPlanificacin_1.setFont(new Font("Arial", Font.BOLD, 9));
 		
 		JButton btnPlanificacin_1_1_3 = new JButton("CERRAR SESIÓN.");
-		btnPlanificacin_1_1_3.setBounds(1068, 44, 112, 45);
+		btnPlanificacin_1_1_3.setBounds(265, 55, 112, 45);
 		panel.add(btnPlanificacin_1_1_3);
 		btnPlanificacin_1_1_3.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -116,7 +116,7 @@ public class EmpresaMenuGrafico extends JFrame {
 		btnPlanificacin_1_1_3.setFont(new Font("Arial", Font.BOLD, 9));
 		
 		JButton btnPlanificacin_1_1 = new JButton("REPORTES.");
-		btnPlanificacin_1_1.setBounds(824, 44, 112, 45);
+		btnPlanificacin_1_1.setBounds(21, 55, 112, 45);
 		panel.add(btnPlanificacin_1_1);
 		btnPlanificacin_1_1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -125,12 +125,12 @@ public class EmpresaMenuGrafico extends JFrame {
 		btnPlanificacin_1_1.setFont(new Font("Arial", Font.BOLD, 9));
 		
 		JButton btnPlanificacin_1_1_2_1 = new JButton("GESTIÓN.");
-		btnPlanificacin_1_1_2_1.setBounds(10, 44, 112, 45);
+		btnPlanificacin_1_1_2_1.setBounds(21, 0, 112, 45);
 		panel.add(btnPlanificacin_1_1_2_1);
 		btnPlanificacin_1_1_2_1.setFont(new Font("Arial", Font.BOLD, 9));
 		
 		JButton btnPlanificacin_1_1_2 = new JButton("PLANIFICACIÓN.");
-		btnPlanificacin_1_1_2.setBounds(132, 44, 112, 45);
+		btnPlanificacin_1_1_2.setBounds(143, 0, 112, 45);
 		panel.add(btnPlanificacin_1_1_2);
 		btnPlanificacin_1_1_2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -139,12 +139,12 @@ public class EmpresaMenuGrafico extends JFrame {
 		btnPlanificacin_1_1_2.setFont(new Font("Arial", Font.BOLD, 9));
 		
 		JButton btnPlanificacin_1_1_1 = new JButton("INVITACIONES.");
-		btnPlanificacin_1_1_1.setBounds(254, 44, 112, 45);
+		btnPlanificacin_1_1_1.setBounds(265, 0, 112, 45);
 		panel.add(btnPlanificacin_1_1_1);
 		btnPlanificacin_1_1_1.setFont(new Font("Arial", Font.BOLD, 9));
 		
 		JLabel lblNewLabel_2_2 = new JLabel("Seleccionar Módulo de Gestión:");
-		lblNewLabel_2_2.setBounds(535, 58, 149, 14);
+		lblNewLabel_2_2.setBounds(427, 25, 149, 14);
 		panel.add(lblNewLabel_2_2);
 		
 		JPanel panel_2 = new JPanel();
@@ -171,7 +171,7 @@ public class EmpresaMenuGrafico extends JFrame {
 		panel_2.add(lblNewLabel_2_1_1);
 		
 		JPanel panel_3 = new JPanel();
-		panel_3.setBackground(SystemColor.controlDkShadow);
+		panel_3.setBackground(SystemColor.menu);
 		contentPane.add(panel_3, BorderLayout.CENTER);
 
 	}
