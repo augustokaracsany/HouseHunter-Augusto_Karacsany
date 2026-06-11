@@ -25,8 +25,23 @@ public class ConexionController {
             conect = null; // Resetea el puntero a null para que los métodos de control reconozcan el estado fallido.
         }
     }
-
+// Reemplazar con BD de Clever Cloud. > clever.cloud
+    // Usar Vercel. > vercel.com
+    // Actualizar la librería de la conexión. El mysql-connector-java-5.1.13 no funciona con la conexión a la base de
+    // datos remota, y el mysql-connector-java-nuevo no funciona con la conexión vieja.
     // Garantiza que exista una sola instancia de ConexionController en memoria.
+    // Click der. > Export. > Java. > Runable .JAR file.
+    // Runnear el proyecto en Main antes de Exportar a .jar.
+    // Investigar que es PWA.
+    // Stitch.
+    // v0.app.
+    // Aprender javascript.
+    // midudev. 
+    // mouredev.
+    // dot dager.
+    // soy dalto.
+    // gentleman programming.
+    // nextjs nodejs react 3djs
     public static ConexionController getInstance() { 
         if (instance == null) instance = new ConexionController();
         return instance;
