@@ -107,36 +107,41 @@ public class HabitacionController {
         }
     }
 
-    public String obtenerEstadoHabitacionesHtml() {
-        StringBuilder sb = new StringBuilder();
-        String sql = "SELECT numero, estado FROM habitaciones ORDER BY numero ASC";
+    public String[][] obtenerEstadoHabitacionesMatriz() {
+        // 1. Primero contamos cuántas habitaciones hay para inicializar la matriz con el tamaño exacto
+        String sqlContar = "SELECT COUNT(*) FROM habitaciones";
+        String sqlDatos = "SELECT numero, estado FROM habitaciones ORDER BY numero ASC";
         Connection con = ConexionController.getInstance().getConnection();
-        try (PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            
-            sb.append("<html><body style='width: 260px;'>");
-            sb.append("<h2 style='text-align: center; color: #27ae60;'>🏨 Ocupación de Habitaciones</h2><hr>");
-            sb.append("<table style='width: 100%; border-collapse: collapse;'>");
-
-            boolean tieneHabitaciones = false;
-            while (rs.next()) {
-                tieneHabitaciones = true;
-                String num = rs.getString("numero");
-                String est = rs.getString("estado");
-                
-                String color = "green";
-                if (est.equalsIgnoreCase("Half")) color = "orange";
-                else if (est.equalsIgnoreCase("Completa")) color = "red";
-
-                sb.append("<tr>")
-                  .append("<td style='padding: 5px; border-bottom: 1px solid #eee;'><b>Habitación ").append(num).append("</b></td>")
-                  .append("<td style='text-align: right; padding: 5px; border-bottom: 1px solid #eee; color: ").append(color).append(";'><b>").append(est).append("</b></td>")
-                  .append("</tr>");
+        
+        try {
+            int cantidadFilas = 0;
+            try (PreparedStatement ps = con.prepareStatement(sqlContar);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    cantidadFilas = rs.getInt(1);
+                }
             }
-            sb.append("</table></body></html>");
-            return sb.toString();
+            
+            // Inicializamos la matriz: cantidadFilas x 2 columnas (Número y Estado)
+            String[][] matrizDatos = new String[cantidadFilas][2];
+            
+            try (PreparedStatement ps = con.prepareStatement(sqlDatos);
+                 ResultSet rs = ps.executeQuery()) {
+                
+                int i = 0;
+                while (rs.next()) {
+                    matrizDatos[i][0] = rs.getString("numero");
+                    matrizDatos[i][1] = rs.getString("estado");
+                    i++;
+                }
+            }
+            
+            return matrizDatos;
+            
         } catch (SQLException e) {
-            return "<html><body>❌ Error técnico al consultar habitaciones.</body></html>";
+            System.err.println("Error al generar matriz de habitaciones: " + e.getMessage());
+            // En caso de error, devolvemos una matriz vacía para que la interfaz no tire NullPointerException
+            return new String[0][2];
         }
     }
 }
