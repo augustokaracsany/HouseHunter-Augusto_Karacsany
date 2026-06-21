@@ -156,9 +156,8 @@ public class AdministradorMenuGrafico extends JFrame {
         cambiarPanelDinamico(pnlContenedorHtml);
     }
 
-    // ==========================================
-    // SUB-MENÚS (VISTAS DE BOTONES)
-    // ==========================================
+    // Sub-Menús
+    // Vistas con Botones.
 
     private void mostrarSubMenuRecepcion() {
         JPanel pnlRecepcion = new JPanel(new GridLayout(3, 1, 10, 15));
@@ -208,14 +207,54 @@ public class AdministradorMenuGrafico extends JFrame {
         cambiarPanelDinamico(pnlReportes);
     }
 
-    // ==========================================
-    // LÓGICA INTERNA SIN VENTANAS EXTRA
-    // ==========================================
+    // Lógica Interna
+    // Eliminadas las Ventanas Extra hechas con JOptionPane ShowMessageDialog y HTML.
 
+    /**
+     * Crea una tabla nativa estilizada a partir de una matriz de datos y columnas,
+     * incrustándola en el panel central dinámico con un botón Volver.
+     */
+    private void mostrarTablaEnPanel(String[] columnas, String[][] datos, Runnable accionVolver) {
+        JPanel pnlContenedorTabla = new JPanel(new BorderLayout(0, 10));
+        pnlContenedorTabla.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        // Crear la tabla nativa de Swing
+        javax.swing.JTable tabla = new javax.swing.JTable(datos, columnas);
+        tabla.setFillsViewportHeight(true);
+        tabla.setRowHeight(25); // Filas más espaciadas y legibles
+        tabla.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 12));
+        
+        // Deshabilitar la edición directa de las celdas por el usuario
+        tabla.setDefaultEditor(Object.class, null); 
+
+        JScrollPane scrollPane = new JScrollPane(tabla);
+        pnlContenedorTabla.add(scrollPane, BorderLayout.CENTER);
+
+        // Botón Volver abajo integrado perfectamente al flujo
+        JButton btnVolver = new JButton("VOLVER");
+        btnVolver.setFont(new Font("Tahoma", Font.BOLD, 11));
+        btnVolver.addActionListener(e -> accionVolver.run());
+        pnlContenedorTabla.add(btnVolver, BorderLayout.SOUTH);
+
+        cambiarPanelDinamico(pnlContenedorTabla);
+    }
+    
     private void monitorearHabitaciones() {
-        String estadoHabitacionesHtml = HabitacionController.getInstance().obtenerEstadoHabitacionesHtml(); 
-        // En vez de showMessageDialog, lo pintamos adentro con el botón volver
-        mostrarContenidoHtmlEnPanel(estadoHabitacionesHtml, () -> mostrarSubMenuRecepcion());
+        // Definimos las columnas de la tabla
+        String[] columnas = {"Número de Habitación", "Estado actual de ocupación"};
+        
+        // Solicitamos la matriz limpia al controlador
+        String[][] datos = HabitacionController.getInstance().obtenerEstadoHabitacionesMatriz();
+        
+        // Validamos si llegó vacía por algún error de conexión
+        if (datos.length == 0) {
+            JOptionPane.showMessageDialog(this, "⚠️ No se encontraron habitaciones registradas o error de base de datos.", "Error de carga", JOptionPane.WARNING_MESSAGE);
+            mostrarSubMenuRecepcion();
+            return;
+        }
+        
+        // Mandamos a pintar la JTable en el panel dinámico con la acción para el botón Volver
+        mostrarTablaEnPanel(columnas, datos, () -> mostrarSubMenuRecepcion());
     }
 
     private void visualizarCronograma() {
