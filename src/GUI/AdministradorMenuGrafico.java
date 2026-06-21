@@ -259,49 +259,37 @@ public class AdministradorMenuGrafico extends JFrame {
 
     private void visualizarCronograma() {
         String codEvento = JOptionPane.showInputDialog(this, "Ingrese el Código Único del Evento:", "Consultar Cronograma.", JOptionPane.QUESTION_MESSAGE);
-        if (codEvento != null && !codEvento.trim().isEmpty()) {
-            String agendaHtml = ActividadController.getInstance().obtenerCronogramaEventos(codEvento.trim());
-            mostrarContenidoHtmlEnPanel(agendaHtml, () -> mostrarSubMenuActividades());
+        if (codEvento == null || codEvento.trim().isEmpty()) return;
+
+        String[] columnas = {"Horario", "Actividad / Nombre", "Categoría", "Prioridad"};
+        String[][] datos = ActividadController.getInstance().obtenerCronogramaMatriz(codEvento.trim());
+
+        if (datos.length == 0) {
+            JOptionPane.showMessageDialog(this, "❌ Sin actividades registradas para este evento.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
+            return;
         }
+
+        mostrarTablaEnPanel(columnas, datos, () -> mostrarSubMenuActividades());
     }
 
     private void generarReporteConsolidado() {
-        List<String[]> listaReservas = EventoController.getInstance().listarTodasLasReservas();
         
-        if (listaReservas.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "❌ No hay ninguna reserva registrada en el hotel.", "Reportes Vacíos", JOptionPane.WARNING_MESSAGE);
+        String codEvento = JOptionPane.showInputDialog(this, "Ingrese el Código Único del Evento a auditar:", "Auditoría de Eventos", JOptionPane.QUESTION_MESSAGE);
+        if (codEvento == null || codEvento.trim().isEmpty()) return;
+
+        String[] columnas = {"Concepto / Métrica", "Valor Registrado"};
+        String[][] datos = EventoController.getInstance().obtenerReporteConsolidadoMatriz(codEvento.trim());
+
+        if (datos.length == 0) {
+            JOptionPane.showMessageDialog(this, "❌ Código de evento inválido o sin datos de auditoría.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
-        String[] opcionesDesplegable = new String[listaReservas.size()];
-        for (int i = 0; i < listaReservas.size(); i++) {
-            String[] res = listaReservas.get(i);
-            opcionesDesplegable[i] = "[ID: " + res[0] + "] - " + res[1] + " (Ref: " + res[2] + ")";
-        }
-        
-        String seleccionReserva = (String) JOptionPane.showInputDialog(
-            this, "Seleccione la reserva que desea auditar:", "Selector de Informes",
-            JOptionPane.PLAIN_MESSAGE, null, opcionesDesplegable, opcionesDesplegable[0]
-        );
-        
-        if (seleccionReserva == null) return;
-        
-        int indexSeleccionado = -1;
-        for (int i = 0; i < opcionesDesplegable.length; i++) {
-            if (opcionesDesplegable[i].equals(seleccionReserva)) {
-                indexSeleccionado = i;
-                break;
-            }
-        }
-        
-        String codEventoReal = listaReservas.get(indexSeleccionado)[2];
-        String reporteHtml = EventoController.getInstance().obtenerReporteConsolidadoAdministrador(codEventoReal);
-        
-        // Renderizado directo en el panel del medio del administrador
-        mostrarContenidoHtmlEnPanel(reporteHtml, () -> mostrarSubMenuReportes());
+
+        // Se muestra directo en la JTable central con botón volver.
+        mostrarTablaEnPanel(columnas, datos, () -> mostrarSubMenuReportes());
     }
 
-    // Los inputs de carga rápida (cuadros de diálogo de entrada obligatorios) se mantienen por teclado
+    // Los inputs de carga rápida ( Cuadros de diálogo de entrada obligatorios. ) se mantienen por teclado.
     private void validarInvitadoPrevia() {
         String codEvento = JOptionPane.showInputDialog(this, "Ingrese el Código Único del Evento:", "Validación Previa", JOptionPane.QUESTION_MESSAGE);
         if (codEvento == null || codEvento.trim().isEmpty()) return;
