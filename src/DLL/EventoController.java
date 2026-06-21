@@ -425,4 +425,39 @@ public class EventoController {
         }
         return reservas;
     }
+    public String[][] obtenerReporteConsolidadoMatriz(String codigoEvento) {
+        String sql = "SELECT rh.id, " +
+                     "  (SELECT COUNT(*) FROM lista_invitados_previa lip WHERE lip.id_reserva = rh.id) as total_invitados, " +
+                     "  (SELECT COUNT(DISTINCT ah.id_usuario) FROM asignaciones_habitaciones ah WHERE ah.id_reserva = rh.id) as total_checkins, " +
+                     "  (SELECT COUNT(*) FROM actividades act " +
+                     "   JOIN asistencias_actividades aa ON aa.id_actividad = act.id " +
+                     "   WHERE act.id_reserva = rh.id AND aa.asistio = 'S') as total_asistencias " +
+                     "FROM reservas_hotel rh " +
+                     "WHERE rh.codigo_unico_evento = ?";
+                     
+        Connection con = ConexionController.getInstance().getConnection();
+        try (PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, codigoEvento);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int totalInvitados = rs.getInt("total_invitados");
+                    int totalCheckins = rs.getInt("total_checkins");
+                    int totalAsistencias = rs.getInt("total_asistencias");
+                    int porcentajeOcupacion = totalInvitados > 0 ? (totalCheckins * 100 / totalInvitados) : 0;
+
+                    // Armamos 4 filas de kpi/métricas para la tabla
+                    return new String[][] {
+                        {"Invitados en Lista", String.valueOf(totalInvitados)},
+                        {"Check-ins Exitosos", String.valueOf(totalCheckins)},
+                        {"Porcentaje de Ocupación", porcentajeOcupacion + "%"},
+                        {"Asistencias Totales a Actividades", String.valueOf(totalAsistencias)}
+                    };
+                }
+            }
+            return new String[0][2]; // Evento no encontrado
+        } catch (SQLException e) {
+            System.err.println("Error al generar matriz de reporte: " + e.getMessage());
+            return new String[0][2];
+        }
+    }
 }
