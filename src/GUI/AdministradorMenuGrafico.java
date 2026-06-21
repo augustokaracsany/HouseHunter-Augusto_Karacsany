@@ -130,31 +130,6 @@ public class AdministradorMenuGrafico extends JFrame {
         pnlDinamico.repaint();
     }
 
-    /**
-     * Encapsula cualquier HTML devuelto por los controladores y le añade un botón Volver abajo.
-     */
-    private void mostrarContenidoHtmlEnPanel(String htmlContenido, Runnable accionVolver) {
-        JPanel pnlContenedorHtml = new JPanel(new BorderLayout(0, 10));
-        pnlContenedorHtml.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        // Usamos JTextPane para que interprete el HTML nativamente sin romper layouts
-        JTextPane txtPane = new JTextPane();
-        txtPane.setContentType("text/html");
-        txtPane.setText(htmlContenido);
-        txtPane.setEditable(false);
-        txtPane.setCaretPosition(0); // Scroll arriba de todo por defecto
-
-        JScrollPane scrollPane = new JScrollPane(txtPane);
-        pnlContenedorHtml.add(scrollPane, BorderLayout.CENTER);
-
-        // Botón Volver abajo
-        JButton btnVolver = new JButton("VOLVER");
-        btnVolver.setFont(new Font("Tahoma", Font.BOLD, 11));
-        btnVolver.addActionListener(e -> accionVolver.run());
-        pnlContenedorHtml.add(btnVolver, BorderLayout.SOUTH);
-
-        cambiarPanelDinamico(pnlContenedorHtml);
-    }
 
     // Sub-Menús
     // Vistas con Botones.
