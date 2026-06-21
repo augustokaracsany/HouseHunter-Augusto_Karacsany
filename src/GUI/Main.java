@@ -2,6 +2,8 @@ package GUI; // Capa de Interfaz Gráfica de Usuario (Vistas). < GUI.
 
 import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
+
+import BLL.Empresa;
 import BLL.Persona;
 import BLL.Rol;
 import DLL.AutenticacionController; // Conexión obligatoria intermedia
@@ -33,32 +35,49 @@ public class Main {
             );
 
             if (menuPrincipal == 0) {
-                // LOGIN
-                String email = JOptionPane.showInputDialog(null, "Ingrese su email:", "Login", JOptionPane.QUESTION_MESSAGE);
-                if (email != null && !email.trim().isEmpty()) {
-                    String password = JOptionPane.showInputDialog(null, "Ingrese su contraseña:", "Login", JOptionPane.QUESTION_MESSAGE);
-                    if (password != null && !password.trim().isEmpty()) {
-                        
-                        // ARQUITECTURA CORRECTA: Se invoca al controlador intermedio, respetando las capas.
-                        Persona usuario = AutenticacionController.getInstance().iniciarSesion(email, password);
+            	// LOGIN
+            	String email = JOptionPane.showInputDialog(null, "Ingrese su email:", "Login", JOptionPane.QUESTION_MESSAGE);
+            	if (email != null && !email.trim().isEmpty()) {
+            	    String password = JOptionPane.showInputDialog(null, "Ingrese su contraseña:", "Login", JOptionPane.QUESTION_MESSAGE);
+            	    if (password != null && !password.trim().isEmpty()) {
+            	        
+            	        // ARQUITECTURA CORRECTA: Se invoca al controlador intermedio, respetando las capas.
+            	        Persona usuario = AutenticacionController.getInstance().iniciarSesion(email, password);
 
-                        if (usuario != null) {
-                            JOptionPane.showMessageDialog(null, "¡Login exitoso!\nBienvenido " + usuario.getNombre());
-                            usuario.mostrarMenu(); // Carga las pantallas internas del usuario logueado.
-                            
-                            // Log por consola/terminal del listado técnico para Verificación
-                            System.out.println("--- LISTA DE USUARIOS EN BASE DE DATOS ---");
-                            LinkedList<Persona> todos = verificadorRepo.listarTodos();
-                            for (Persona p : todos) {
-                                System.out.println("ID: " + p.getId() + " | Nombre: " + p.getNombre() + 
-                                                   " | Email: " + p.getEmail() + " | Rol: " + p.getRol());
-                            }
-                            System.out.println("------------------------------------------");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Credenciales inválidas. Intente nuevamente.", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                    }
-                }
+            	        if (usuario != null) {
+            	            JOptionPane.showMessageDialog(null, "¡Login exitoso!\nBienvenido " + usuario.getNombre());
+            	            
+            	            
+            	            if (usuario.getRol() == Rol.EMPRESA && usuario instanceof Empresa) {
+            	                // Cast seguro a Empresa para pasárselo al constructor gráfico.
+            	                Empresa empresaLogueada = (Empresa) usuario; 
+            	                
+            	                // Invocamos la ventana de WindowBuilder.
+            	                java.awt.EventQueue.invokeLater(() -> {
+            	                    try {
+            	                        EmpresaMenuGrafico ventana = new EmpresaMenuGrafico(empresaLogueada);
+            	                        ventana.setVisible(true);
+            	                    } catch (Exception e) {
+            	                        e.printStackTrace();
+            	                    }
+            	                });
+            	            } else {
+            	                // Si es un invitado u otro rol, que siga usando su flujo original
+            	                usuario.mostrarMenu(); 
+            	            }  	            
+            	            // Log por consola/terminal del listado técnico para Verificación
+            	            System.out.println("--- LISTA DE USUARIOS EN BASE DE DATOS ---");
+            	            LinkedList<Persona> todos = verificadorRepo.listarTodos();
+            	            for (Persona p : todos) {
+            	                System.out.println("ID: " + p.getId() + " | Nombre: " + p.getNombre() + 
+            	                                   " | Email: " + p.getEmail() + " | Rol: " + p.getRol());
+            	            }
+            	            System.out.println("------------------------------------------");
+            	        } else {
+            	            JOptionPane.showMessageDialog(null, "Credenciales inválidas. Intente nuevamente.", "Error", JOptionPane.ERROR_MESSAGE);
+            	        }
+            	    }
+            	}
 
             } else if (menuPrincipal == 1) {
                 // REGISTRO 
