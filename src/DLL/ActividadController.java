@@ -206,7 +206,53 @@ public class ActividadController {
             return false;
         }
     }
+    public String[][] obtenerCronogramaMatriz(String codigoEvento) {
+        String sqlContar = "SELECT COUNT(*) FROM actividades a JOIN reservas_hotel rh ON a.id_reserva = rh.id WHERE rh.codigo_unico_evento = ?";
+        String sqlDatos = "SELECT a.nombre, a.descripcion, a.importancia, a.categoria, a.hora_actividad " +
+                          "FROM actividades a " +
+                          "JOIN reservas_hotel rh ON a.id_reserva = rh.id " +
+                          "WHERE rh.codigo_unico_evento = ? " +
+                          "ORDER BY a.hora_actividad ASC";
 
+        Connection con = ConexionController.getInstance().getConnection();
+        try {
+            int filas = 0;
+            try (PreparedStatement ps = con.prepareStatement(sqlContar)) {
+                ps.setString(1, codigoEvento);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) filas = rs.getInt(1);
+                }
+            }
+
+            // Matriz de N filas x 4 columnas (Hora, Nombre, Categoría, Prioridad)
+            String[][] matriz = new String[filas][4];
+
+            try (PreparedStatement ps = con.prepareStatement(sqlDatos)) {
+                ps.setString(1, codigoEvento);
+                try (ResultSet rs = ps.executeQuery()) {
+                    int i = 0;
+                    while (rs.next()) {
+                        String hora = rs.getTime("hora_actividad").toString().substring(0, 5) + " hs";
+                        String nombre = rs.getString("nombre");
+                        String categoria = rs.getString("categoria");
+                        String importancia = rs.getString("importancia");
+
+                        matriz[i][0] = hora;
+                        matriz[i][1] = nombre;
+                        matriz[i][2] = categoria;
+                        matriz[i][3] = importancia;
+                        i++;
+                    }
+                }
+            }
+            return matriz;
+
+        } catch (SQLException e) {
+            System.err.println("Error al generar matriz de cronograma: " + e.getMessage());
+            return new String[0][4];
+        }
+    }
+    
     // Eliminación física de una actividad por su identificador único ID.
     public boolean eliminarActividad(int idActividad) {
         String sql = "DELETE FROM actividades WHERE id = ?";
