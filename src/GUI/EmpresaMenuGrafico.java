@@ -45,113 +45,23 @@ public class EmpresaMenuGrafico extends JFrame {
     private JLabel lblReservaActiva;
     private JLabel lblCodigoEvento;
 
-	/**
-	 * Create the frame.
-	 */
-	public EmpresaMenuGrafico() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 1000, 500);
-		contentPane = new JPanel();
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-		setContentPane(contentPane);
-		contentPane.setLayout(new BorderLayout(0, 0));
-		
-		JPanel panel_1 = new JPanel();
-		panel_1.setBackground(SystemColor.menu);
-		panel_1.setPreferredSize(new Dimension(400, 10));
-		contentPane.add(panel_1, BorderLayout.WEST);
-		panel_1.setLayout(null);
-		
-		JLabel lblNewLabel = new JLabel("");
-		lblNewLabel.setBounds(0, 0, 400, 351);
-		panel_1.add(lblNewLabel);
-		lblNewLabel.setIcon(new ImageIcon(EmpresaMenuGrafico.class.getResource("/img/HouseHunter_Menu-Empresa.png")));
-		
-		JPanel panel = new JPanel();
-		panel.setAlignmentX(Component.LEFT_ALIGNMENT);
-		panel.setBackground(SystemColor.menu);
-		panel.setPreferredSize(new Dimension(10, 100));
-		contentPane.add(panel, BorderLayout.SOUTH);
-		panel.setLayout(null);
-		
-		JButton btnPlanificacin_1 = new JButton("RESERVAS.");
-		btnPlanificacin_1.setBounds(143, 55, 112, 45);
-		panel.add(btnPlanificacin_1);
-		btnPlanificacin_1.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		buttonGroup.add(btnPlanificacin_1);
-		btnPlanificacin_1.setFont(new Font("Arial", Font.BOLD, 9));
-		
-		JButton btnPlanificacin_1_1_3 = new JButton("CERRAR SESIÓN.");
-		btnPlanificacin_1_1_3.setBounds(265, 55, 112, 45);
-		panel.add(btnPlanificacin_1_1_3);
-		btnPlanificacin_1_1_3.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		btnPlanificacin_1_1_3.setFont(new Font("Arial", Font.BOLD, 9));
-		
-		JButton btnPlanificacin_1_1 = new JButton("REPORTES.");
-		btnPlanificacin_1_1.setBounds(21, 55, 112, 45);
-		panel.add(btnPlanificacin_1_1);
-		btnPlanificacin_1_1.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		btnPlanificacin_1_1.setFont(new Font("Arial", Font.BOLD, 9));
-		
-		JButton btnPlanificacin_1_1_2_1 = new JButton("GESTIÓN.");
-		btnPlanificacin_1_1_2_1.setBounds(21, 0, 112, 45);
-		panel.add(btnPlanificacin_1_1_2_1);
-		btnPlanificacin_1_1_2_1.setFont(new Font("Arial", Font.BOLD, 9));
-		
-		JButton btnPlanificacin_1_1_2 = new JButton("PLANIFICACIÓN.");
-		btnPlanificacin_1_1_2.setBounds(143, 0, 112, 45);
-		panel.add(btnPlanificacin_1_1_2);
-		btnPlanificacin_1_1_2.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
-		btnPlanificacin_1_1_2.setFont(new Font("Arial", Font.BOLD, 9));
-		
-		JButton btnPlanificacin_1_1_1 = new JButton("INVITACIONES.");
-		btnPlanificacin_1_1_1.setBounds(265, 0, 112, 45);
-		panel.add(btnPlanificacin_1_1_1);
-		btnPlanificacin_1_1_1.setFont(new Font("Arial", Font.BOLD, 9));
-		
-		JLabel lblNewLabel_2_2 = new JLabel("Seleccionar Módulo de Gestión:");
-		lblNewLabel_2_2.setBounds(427, 25, 149, 14);
-		panel.add(lblNewLabel_2_2);
-		
-		JPanel panel_2 = new JPanel();
-		panel_2.setBackground(SystemColor.menu);
-		panel_2.setPreferredSize(new Dimension(380, 10));
-		contentPane.add(panel_2, BorderLayout.EAST);
-		panel_2.setLayout(null);
-		
-		JLabel lblNewLabel_2 = new JLabel("Reserva Activa: ID.");
-		lblNewLabel_2.setBounds(139, 117, 102, 14);
-		panel_2.add(lblNewLabel_2);
-		
-		JLabel lblNewLabel_1 = new JLabel("Panel de Empresa.");
-		lblNewLabel_1.setBounds(99, 60, 182, 27);
-		lblNewLabel_1.setFont(new Font("Tahoma", Font.PLAIN, 22));
-		panel_2.add(lblNewLabel_1);
-		
-		JLabel lblNewLabel_2_1 = new JLabel("Entidad: Globant S.A.");
-		lblNewLabel_2_1.setBounds(121, 98, 137, 14);
-		panel_2.add(lblNewLabel_2_1);
-		
-		JLabel lblNewLabel_2_1_1 = new JLabel("Código de Evento: GLOBANT-2026");
-		lblNewLabel_2_1_1.setBounds(99, 135, 182, 14);
-		panel_2.add(lblNewLabel_2_1_1);
-		
-		JPanel panel_3 = new JPanel();
-		panel_3.setBackground(SystemColor.menu);
-		contentPane.add(panel_3, BorderLayout.CENTER);
+    /**
+     * Constructor correcto que recibe la empresa logueada desde el Main.
+     */
+    public EmpresaMenuGrafico(Empresa empresa) {
+        this.empresa = empresa;
+        this.service = new EmpresaService(empresa);
+        
+        // Inicializamos los componentes de la interfaz gráfica
+        initialize();
+        
+        // Sincronizamos los datos de la reserva apenas abre la ventana
+        actualizarInfoReserva();
+    }
 
+    /**
+     * Inicializa los componentes de la ventana.
+     */
     private void initialize() {
         setTitle("HOUSEHUNTER - PANEL DE EMPRESA");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -163,9 +73,7 @@ public class EmpresaMenuGrafico extends JFrame {
         setContentPane(contentPane);
         contentPane.setLayout(new BorderLayout(10, 0));
 
-       // Pánel Lateral.
-        // Menú de Navegación.
-        
+        // Pánel Lateral (Menú de Navegación)
         JPanel pnlLateral = new JPanel();
         pnlLateral.setBackground(SystemColor.controlDkShadow);
         pnlLateral.setBorder(new LineBorder(new Color(0, 0, 0)));
@@ -206,13 +114,12 @@ public class EmpresaMenuGrafico extends JFrame {
         });
         pnlLateral.add(btnCerrarSesion);
 
-       // Pánel Central.
-        
+        // Pánel Central
         JPanel pnlCentro = new JPanel();
         contentPane.add(pnlCentro, BorderLayout.CENTER);
         pnlCentro.setLayout(new BorderLayout(0, 10));
 
-        // Cabecera de estado continuo (Reemplaza los molestos textos HTML del OptionDialog)
+        // Cabecera de estado continuo
         JPanel pnlCabeceraInfo = new JPanel();
         pnlCabeceraInfo.setBackground(new Color(245, 245, 245));
         pnlCabeceraInfo.setBorder(new LineBorder(Color.LIGHT_GRAY));
@@ -234,7 +141,7 @@ public class EmpresaMenuGrafico extends JFrame {
         lblCodigoEvento.setHorizontalAlignment(SwingConstants.CENTER);
         pnlCabeceraInfo.add(lblCodigoEvento);
 
-        // Espacio Dinámico: Acá se inyectarían las sub-opciones limpiamente.
+        // Espacio Dinámico: Cambia según el módulo elegido
         pnlDinamico = new JPanel();
         pnlDinamico.setBorder(new LineBorder(Color.GRAY));
         pnlCentro.add(pnlDinamico, BorderLayout.CENTER);
@@ -244,10 +151,8 @@ public class EmpresaMenuGrafico extends JFrame {
         lblVistaPrevia.setHorizontalAlignment(SwingConstants.CENTER);
         pnlDinamico.add(lblVistaPrevia, BorderLayout.CENTER);
     }
+    // Métodos de Control y Lógica de Paneles Dinámicos
 
-// Métodos de Control.
-    // REFACTOR 20/06/26
-    
     private void actualizarInfoReserva() {
         if (empresa.getReservaActual() != null) {
             Reserva r = empresa.getReservaActual();
@@ -273,8 +178,8 @@ public class EmpresaMenuGrafico extends JFrame {
         pnlDinamico.repaint();
     }
 
-// Sub-Menú
-    
+// Sub-Menús Visuales en Panel Central
+
     private void mostrarSubMenuGestion() {
         JPanel pnlGestion = new JPanel(new GridLayout(5, 1, 10, 10));
         pnlGestion.setBorder(new EmptyBorder(20, 50, 20, 50));
@@ -435,6 +340,7 @@ public class EmpresaMenuGrafico extends JFrame {
         return false;
     }
 
+    // Métodos Operacionales (Llamadas a Capa BLL / Service)
     private void crearPremio() {
         String nombre = JOptionPane.showInputDialog(this, "Nombre del premio:", "Nuevo Premio", JOptionPane.QUESTION_MESSAGE);
         if (nombre == null || nombre.trim().isEmpty()) return;
@@ -491,7 +397,6 @@ public class EmpresaMenuGrafico extends JFrame {
         Invitado ganador = postulados.get(0);
 
         if (service.registrarGanadorSorteo(ganador.getId(), premioElegido.getId())) {
-            // Volvemos a usar tu String.format original impecable
             String mensajeGanador = String.format(
                 "¡¡ TENEMOS UN GANADOR !!\n\n" +
                 "Premio sorteado: %s\n" +
