@@ -294,25 +294,99 @@ public class AdministradorMenuGrafico extends JFrame {
     }
 
     private void tomarAsistenciaInvitados() {
-        String codEvento = JOptionPane.showInputDialog(this, "Ingrese el Código Único del Evento:", "Control de Asistencias", JOptionPane.QUESTION_MESSAGE);
-        if (codEvento == null || codEvento.trim().isEmpty()) return; 
+        // 1. Instanciamos el panel interactivo continuo
+        JPanel pnlAsistenciasContinuas = new JPanel(new BorderLayout(15, 15));
+        pnlAsistenciasContinuas.setBorder(new EmptyBorder(15, 15, 15, 15));
+
+        // --- SUB-PANEL 1: CONFIGURACIÓN DE CONTEXTO ---
+        JPanel panelNorte = new JPanel(new java.awt.GridBagLayout());
+        panelNorte.setBorder(javax.swing.BorderFactory.createTitledBorder("Contexto de la Actividad"));
+        java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+        gbc.insets = new java.awt.Insets(5, 5, 5, 5);
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+
+        gbc.gridx = 0; gbc.gridy = 0;
+        panelNorte.add(new JLabel("Código Evento:"), gbc);
         
-        String[] actividades = ActividadController.getInstance().obtenerNombresActividades(codEvento.trim());
-        if (actividades.length == 0) { 
-            JOptionPane.showMessageDialog(this, "❌ No hay actividades cargadas o el evento no existe.", "Aviso.", JOptionPane.WARNING_MESSAGE);
-            return; 
-        }
-        
-        String actividadSeleccionada = (String) JOptionPane.showInputDialog(
-            this, "Seleccione la actividad a gestionar:", "Monitoreo de Bloques.",
-            JOptionPane.PLAIN_MESSAGE, null, actividades, actividades[0]
-        );
-        
-        if (actividadSeleccionada != null) { 
-            String dniInvitado = JOptionPane.showInputDialog(this, "Ingrese el DNI del Invitado que asistió:", "Tomar Asistencia.", JOptionPane.QUESTION_MESSAGE);
-            if (dniInvitado != null && !dniInvitado.trim().isEmpty()) {
-                ActividadController.getInstance().registrarAsistenciaActividad(codEvento.trim(), actividadSeleccionada, dniInvitado.trim());
+        gbc.gridx = 1; javax.swing.JTextField txtCod = new javax.swing.JTextField(12);
+        panelNorte.add(txtCod, gbc);
+
+        gbc.gridx = 2; JButton btnCargar = new JButton("Cargar Bloques");
+        panelNorte.add(btnCargar, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1;
+        panelNorte.add(new JLabel("Actividad Activa:"), gbc);
+
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        javax.swing.JComboBox<String> comboAct = new javax.swing.JComboBox<>();
+        comboAct.setEnabled(false);
+        panelNorte.add(comboAct, gbc);
+
+        // --- SUB-PANEL 2: ACCIÓN CONTINUA (DNI + LOG) ---
+        JPanel panelCentro = new JPanel(new BorderLayout(10, 10));
+        panelCentro.setBorder(javax.swing.BorderFactory.createTitledBorder("Control de Puerta (Fichado Rápido)"));
+
+        JPanel panelFilaDni = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+        panelFilaDni.add(new JLabel("Ingresar DNI: "));
+        javax.swing.JTextField txtDni = new javax.swing.JTextField(15);
+        txtDni.setFont(new Font("Arial", Font.BOLD, 14));
+        txtDni.setEnabled(false);
+        panelFilaDni.add(txtDni);
+        panelFilaDni.add(new JLabel("💡 (Presione ENTER)"));
+
+        javax.swing.JTextArea txtLog = new javax.swing.JTextArea(8, 40);
+        txtLog.setEditable(false);
+        txtLog.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        JScrollPane scrollLog = new JScrollPane(txtLog);
+
+        panelCentro.add(panelFilaDni, BorderLayout.NORTH);
+        panelCentro.add(scrollLog, BorderLayout.CENTER);
+
+        // --- COMPONENTES AL CONTENEDOR PRINCIPAL ---
+        pnlAsistenciasContinuas.add(panelNorte, BorderLayout.NORTH);
+        pnlAsistenciasContinuas.add(panelCentro, BorderLayout.CENTER);
+
+        // Botón Volver abajo integrado perfectamente a tu estilo de GUI
+        JButton btnVolver = new JButton("VOLVER");
+        btnVolver.setFont(new Font("Tahoma", Font.BOLD, 11));
+        btnVolver.addActionListener(e -> mostrarSubMenuActividades());
+        pnlAsistenciasContinuas.add(btnVolver, BorderLayout.SOUTH);
+
+        // --- LÓGICA DE CONTROLADORES ASOCIADA ---
+        btnCargar.addActionListener(e -> {
+            String cod = txtCod.getText().trim();
+            if (cod.isEmpty()) return;
+            
+            String[] acts = ActividadController.getInstance().obtenerNombresActividades(cod);
+            comboAct.removeAllItems();
+            if (acts.length == 0) {
+                txtLog.setText("❌ No se encontraron actividades para el evento: " + cod + "\n");
+                comboAct.setEnabled(false);
+                txtDni.setEnabled(false);
+            } else {
+                for (String a : acts) comboAct.addItem(a);
+                comboAct.setEnabled(true);
+                txtDni.setEnabled(true);
+                txtLog.setText("✅ Lista de actividades cargada.\nSeleccione el bloque arriba y fije el cursor en 'Ingresar DNI'.\n\n");
+                txtDni.requestFocusInWindow();
             }
-        }
+        });
+
+        txtDni.addActionListener(e -> {
+            String dni = txtDni.getText().trim();
+            String actSel = (String) comboAct.getSelectedItem();
+            String cod = txtCod.getText().trim();
+            if (dni.isEmpty() || actSel == null) return;
+
+            // Llama a tu controlador físico para persistir en asistencias_actividades
+            ActividadController.getInstance().registrarAsistenciaActividad(cod, actSel, dni);
+            
+            txtLog.append("🔹 [Fichado] DNI: " + dni + " -> Registrado en: " + actSel + "\n");
+            txtDni.setText("");
+            txtDni.requestFocusInWindow(); // Queda listo para el próximo de la fila
+        });
+
+        // Inyectamos todo el formulario directo en tu panel dinámico central
+        cambiarPanelDinamico(pnlAsistenciasContinuas);
     }
 }
