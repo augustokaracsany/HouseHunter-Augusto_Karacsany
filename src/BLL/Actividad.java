@@ -23,7 +23,9 @@ public class Actividad {
 
     private int duracionMinutos; 
     // Entero simple acá porque representar el tiempo de la actividad en minutos nos simplifica los cálculos matemáticos cuando tengo que validar solapamientos de horarios.
-
+// ALTER TABLE actividades ADD COLUMN duracion_minutos INT DEFAULT 0;
+    // No está la Columna de la BD. 
+    // FACEPALM ENORME
     private int cupoMaximo; 
     // Otro entero para establecer el límite de asistentes permitidos, clave para validar las inscripciones antes de romper el stock de espacios.
 

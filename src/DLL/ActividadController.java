@@ -168,37 +168,36 @@ public class ActividadController {
     }
    // ( CRUD / ABM para Empresa. )
     // Inserción directa de un nuevo registro en la tabla 'actividades'.
-    public boolean guardarActividad(int idReserva, String nombre, String desc, String importancia, String categoria, String hora) {
-        String sql = "INSERT INTO actividades (id_reserva, nombre, descripcion, hora_actividad, importancia, categoria) VALUES (?, ?, ?, ?, ?, ?)";
+ // Inserción directa de un nuevo registro incluyendo la duración en minutos
+    public boolean guardarActividad(int idReserva, String nombre, String desc, String importancia, String categoria, String hora, int duracionMinutos) {
+        // Agregamos 'duracion_minutos' al INSERT sql
+        String sql = "INSERT INTO actividades (id_reserva, nombre, descripcion, hora_actividad, importancia, categoria, duracion_minutos) VALUES (?, ?, ?, ?, ?, ?, ?)";
         
-        // --- FORMATEO EXCLUSIVO FULL MAYÚSCULAS PARA MATCH CON ENUMS MODIFICADOS ---
-        
-        // 1. Importancia va FULL MAYÚSCULAS ('ALTA', 'MEDIA', 'BAJA')
+        // --- FORMATEO EXCLUSIVO FULL MAYÚSCULAS ---
         String importanciaFormateada = "MEDIA";
         if (importancia != null && !importancia.trim().isEmpty()) {
             importanciaFormateada = importancia.trim().toUpperCase();
         }
         
-     // 2. CORREGIDO: Categoría se normaliza full mayúsculas y arregla desajustes de la UI
         String categoriaFormateada = "OTROS";
         if (categoria != null && !categoria.trim().isEmpty()) {
             String limpia = categoria.trim().toUpperCase();
-            
-            // Atajamos los singulares/variantes por si quedaron configurados en componentes viejos
             if (limpia.equals("CHARLA")) limpia = "CHARLAS";
             if (limpia.equals("RECREATIVA") || limpia.equals("RECREACIÓN")) limpia = "RECREACION";
             if (limpia.equals("OTRO")) limpia = "OTROS";
             
             categoriaFormateada = limpia;
         }
+        
         Connection con = ConexionController.getInstance().getConnection();
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, idReserva);
             ps.setString(2, nombre);
             ps.setString(3, desc);
-            ps.setString(4, hora); // El string formateado HH:mm:ss
+            ps.setString(4, hora); 
             ps.setString(5, importanciaFormateada);
             ps.setString(6, categoriaFormateada);
+            ps.setInt(7, duracionMinutos); // <--- NUEVO PARAMETRO EN SQL
             
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
