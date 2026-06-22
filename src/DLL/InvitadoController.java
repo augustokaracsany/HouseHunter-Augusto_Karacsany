@@ -28,9 +28,12 @@ public class InvitadoController {
             try (PreparedStatement ps = con.prepareStatement(sql)) {
                 for (Invitado inv : invitados) {
                     ps.setInt(1, idReserva);
-                    ps.setString(2, inv.getNombre());
+                    ps.setString(2, inv.getNombreSolo()); // Usá getNombreSolo() para no concatenar apellido acá
                     ps.setString(3, inv.getApellido());
-                    ps.setString(4, inv.getTelefono());
+                    
+                    String tel = inv.getTelefono();
+                    ps.setString(4, (tel == null) ? "" : tel.trim());
+                    
                     ps.setString(5, inv.getDni());
                     ps.setString(6, ""); 
                     ps.addBatch();
