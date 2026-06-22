@@ -79,7 +79,11 @@ public class AdministradorMenuGrafico extends JFrame {
         JButton btnCerrarSesion = new JButton("CERRAR SESIÓN");
         btnCerrarSesion.setForeground(Color.RED);
         btnCerrarSesion.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Sesión cerrada de " + admin.getNombre());
+            JOptionPane.showMessageDialog(this, "Cerrando sesión de Administrador.", "Logout", JOptionPane.INFORMATION_MESSAGE);
+            
+            // Redirección segura al login
+            MainMenuGrafico main = new MainMenuGrafico();
+            main.setVisible(true);
             dispose();
         });
         pnlLateral.add(btnCerrarSesion);
