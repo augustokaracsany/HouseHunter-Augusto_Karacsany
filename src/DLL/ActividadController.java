@@ -27,7 +27,8 @@ public class ActividadController {
      
     public String obtenerCronogramaEventos(String codigoEvento) {
         StringBuilder cronograma = new StringBuilder();
-        String sql = "SELECT a.nombre, a.descripcion, a.importancia, a.categoria, a.hora_actividad " +
+        // CORRECCIÓN: Agregada la columna a.duracion_minutos a la consulta
+        String sql = "SELECT a.nombre, a.descripcion, a.importancia, a.categoria, a.hora_actividad, a.duracion_minutos " +
                      "FROM actividades a " +
                      "JOIN reservas_hotel rh ON a.id_reserva = rh.id " +
                      "WHERE rh.codigo_unico_evento = ? " +
@@ -50,13 +51,14 @@ public class ActividadController {
                     String desc = rs.getString("descripcion");
                     String importancia = rs.getString("importancia");
                     String categoria = rs.getString("categoria");
+                    int duracion = rs.getInt("duracion_minutos"); // CORRECCIÓN: Captura de la duración física real
 
                     // AJUSTADO: Lógica de renderizado condicional con ENUMs en mayúsculas
                     String colorImportancia = "gray";
                     if (importancia.equalsIgnoreCase("ALTA")) colorImportancia = "red";
                     else if (importancia.equalsIgnoreCase("MEDIA")) colorImportancia = "orange";
 
-                    cronograma.append("<p style='margin-bottom: 2px;'><b>⏱️ ").append(hora).append(" hs</b> - ").append(nombre).append("</p>");
+                    cronograma.append("<p style='margin-bottom: 2px;'><b>⏱️ ").append(hora).append(" hs</b> (").append(duracion).append(" min) - ").append(nombre).append("</p>");
                     cronograma.append("<p style='margin-left: 15px; color: #555; margin-top: 0px;'><i>").append(desc != null ? desc : "Sin descripción").append("</i><br>");
                     cronograma.append("<small>📁 Cat: ").append(categoria).append(" | <font color='").append(colorImportancia).append("'>🔥 ").append(importancia).append("</font></small></p>");
                     cronograma.append("<hr style='border-top: 1px dashed #ccc;'>");
@@ -93,7 +95,7 @@ public class ActividadController {
      // Transacción: Valida la existencia cruzada del invitado y de la actividad.
      // Si pasa los filtros, inserta o actualiza la Asistencia usando sintaxis nativa de MySQL.
      
- // Transacción: Valida la existencia cruzada del invitado y de la actividad.
+// Transacción: Valida la existencia cruzada del invitado y de la actividad.
     // Si pasa los filtros, inserta o actualiza la Asistencia y activa la ELEGIBILIDAD para sorteos de forma automática.
     public boolean registrarAsistenciaActividad(String codigoEvento, String nombreActividad, String dniInvitado) {
         Connection con = ConexionController.getInstance().getConnection();
@@ -170,10 +172,8 @@ public class ActividadController {
     // Inserción directa de un nuevo registro en la tabla 'actividades'.
  // Inserción directa de un nuevo registro incluyendo la duración en minutos
     public boolean guardarActividad(int idReserva, String nombre, String desc, String importancia, String categoria, String hora, int duracionMinutos) {
-        // Agregamos 'duracion_minutos' al INSERT sql
         String sql = "INSERT INTO actividades (id_reserva, nombre, descripcion, hora_actividad, importancia, categoria, duracion_minutos) VALUES (?, ?, ?, ?, ?, ?, ?)";
         
-        // --- FORMATEO EXCLUSIVO FULL MAYÚSCULAS ---
         String importanciaFormateada = "MEDIA";
         if (importancia != null && !importancia.trim().isEmpty()) {
             importanciaFormateada = importancia.trim().toUpperCase();
@@ -197,7 +197,7 @@ public class ActividadController {
             ps.setString(4, hora); 
             ps.setString(5, importanciaFormateada);
             ps.setString(6, categoriaFormateada);
-            ps.setInt(7, duracionMinutos); // <--- NUEVO PARAMETRO EN SQL
+            ps.setInt(7, duracionMinutos);
             
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -205,9 +205,11 @@ public class ActividadController {
             return false;
         }
     }
+
     public String[][] obtenerCronogramaMatriz(String codigoEvento) {
         String sqlContar = "SELECT COUNT(*) FROM actividades a JOIN reservas_hotel rh ON a.id_reserva = rh.id WHERE rh.codigo_unico_evento = ?";
-        String sqlDatos = "SELECT a.nombre, a.descripcion, a.importancia, a.categoria, a.hora_actividad " +
+        // CORRECCIÓN: Agregado a.duracion_minutos al SELECT de la matriz por si tu tabla de JTable la necesita en el futuro.
+        String sqlDatos = "SELECT a.nombre, a.descripcion, a.importancia, a.categoria, a.hora_actividad, a.duracion_minutos " +
                           "FROM actividades a " +
                           "JOIN reservas_hotel rh ON a.id_reserva = rh.id " +
                           "WHERE rh.codigo_unico_evento = ? " +
@@ -223,7 +225,6 @@ public class ActividadController {
                 }
             }
 
-            // Matriz de N filas x 4 columnas (Hora, Nombre, Categoría, Prioridad)
             String[][] matriz = new String[filas][4];
 
             try (PreparedStatement ps = con.prepareStatement(sqlDatos)) {
