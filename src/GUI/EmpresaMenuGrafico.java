@@ -248,7 +248,7 @@ public class EmpresaMenuGrafico extends JFrame {
         pnlCronograma.setBorder(new EmptyBorder(30, 50, 30, 50));
 
         JButton btnCrearAct = new JButton("Crear Actividad");
-        btnCrearAct.addActionListener(e -> crearActividad());
+        btnCrearAct.addActionListener(e -> mostrarFormularioCrearActividad());
 
         JButton btnAsignarImp = new JButton("Asignar Importancia");
         btnAsignarImp.addActionListener(e -> asignarImportancia());
@@ -474,18 +474,130 @@ public class EmpresaMenuGrafico extends JFrame {
         }
     }
 
-    private void crearActividad() {
-        try {
-            String nom = JOptionPane.showInputDialog("Nombre:");
-            String h = JOptionPane.showInputDialog("Hora (HH:MM):") + ":00";
-            String d = JOptionPane.showInputDialog("Descripción:");
-            String imp = (String) JOptionPane.showInputDialog(this, "Importancia:", "Imp", 1, null, new String[]{"BAJA","MEDIA","ALTA"}, "MEDIA");
-            CategoriaActividad cat = (CategoriaActividad) JOptionPane.showInputDialog(this, "Cat:", "Cat", 1, null, CategoriaActividad.values(), CategoriaActividad.CHARLAS);
-            
-            if (service.guardarActividad(nom, d, imp, cat.toString(), h)) {
-                JOptionPane.showMessageDialog(this, "Actividad guardada.");
+    private void mostrarFormularioCrearActividad() {
+        // 1. Instanciamos el panel interactivo continuo
+        JPanel pnlCrearActividad = new JPanel(new BorderLayout(15, 15));
+        pnlCrearActividad.setBorder(new EmptyBorder(20, 40, 20, 40));
+
+        // --- SUB-PANEL: COMPONENTES DEL FORMULARIO ---
+        JPanel panelForm = new JPanel(new java.awt.GridBagLayout());
+        panelForm.setBorder(javax.swing.BorderFactory.createTitledBorder("Nueva Actividad / Módulo"));
+        java.awt.GridBagConstraints gbc = new java.awt.GridBagConstraints();
+        gbc.insets = new java.awt.Insets(8, 8, 8, 8);
+        gbc.fill = java.awt.GridBagConstraints.HORIZONTAL;
+
+        // Fila 0: Nombre
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 1;
+        panelForm.add(new JLabel("Nombre de Actividad:"), gbc);
+        gbc.gridx = 1; javax.swing.JTextField txtNombre = new javax.swing.JTextField(20);
+        panelForm.add(txtNombre, gbc);
+
+        // Fila 1: Hora
+        gbc.gridx = 0; gbc.gridy = 1;
+        panelForm.add(new JLabel("Hora (HH:MM):"), gbc);
+        gbc.gridx = 1; javax.swing.JTextField txtHora = new javax.swing.JTextField(10);
+        panelForm.add(txtHora, gbc);
+
+        // Fila 2: Descripción
+        gbc.gridx = 0; gbc.gridy = 2;
+        panelForm.add(new JLabel("Descripción:"), gbc);
+        gbc.gridx = 1; javax.swing.JTextField txtDescripcion = new javax.swing.JTextField(20);
+        panelForm.add(txtDescripcion, gbc);
+
+        // Fila 3: Duración
+        gbc.gridx = 0; gbc.gridy = 3;
+        panelForm.add(new JLabel("Duración (minutos):"), gbc);
+        gbc.gridx = 1; javax.swing.JTextField txtDuracion = new javax.swing.JTextField(10);
+        panelForm.add(txtDuracion, gbc);
+
+        // Fila 4: Importancia (Combo)
+        gbc.gridx = 0; gbc.gridy = 4;
+        panelForm.add(new JLabel("Importancia / Prioridad:"), gbc);
+        gbc.gridx = 1; 
+        javax.swing.JComboBox<String> comboImp = new javax.swing.JComboBox<>(new String[]{"BAJA", "MEDIA", "ALTA"});
+        comboImp.setSelectedItem("MEDIA");
+        panelForm.add(comboImp, gbc);
+
+        // Fila 5: Categoría (Combo usando tu Enum)
+        gbc.gridx = 0; gbc.gridy = 5;
+        panelForm.add(new JLabel("Categoría:"), gbc);
+        gbc.gridx = 1;
+        // Asumiendo que tenés CategoriaActividad en tu backend
+        javax.swing.JComboBox<CategoriaActividad> comboCat = new javax.swing.JComboBox<>(CategoriaActividad.values());
+        panelForm.add(comboCat, gbc);
+
+        pnlCrearActividad.add(panelForm, BorderLayout.CENTER);
+
+        // --- PANEL INFERIOR DE ACCIONES (Guardar + Volver) ---
+        JPanel panelAcciones = new JPanel(new GridLayout(1, 2, 15, 0));
+        
+        JButton btnGuardar = new JButton("GUARDAR ACTIVIDAD");
+        btnGuardar.setFont(new Font("Tahoma", Font.BOLD, 12));
+        
+        JButton btnVolver = new JButton("VOLVER");
+        btnVolver.setFont(new Font("Tahoma", Font.BOLD, 12));
+        // Modificá el callback al submenú que corresponda en el panel de empresa
+        btnVolver.addActionListener(e -> mostrarSubMenuCronograma()); 
+
+        panelAcciones.add(btnGuardar);
+        panelAcciones.add(btnVolver);
+        pnlCrearActividad.add(panelAcciones, BorderLayout.SOUTH);
+
+        // --- LÓGICA DE PERSISTENCIA ---
+        btnGuardar.addActionListener(e -> {
+            try {
+                String nom = txtNombre.getText().trim();
+                String h = txtHora.getText().trim();
+                String d = txtDescripcion.getText().trim();
+                String duracionStr = txtDuracion.getText().trim();
+                String imp = (String) comboImp.getSelectedItem();
+                CategoriaActividad cat = (CategoriaActividad) comboCat.getSelectedItem();
+
+                // Validaciones rápidas
+                if (nom.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "El nombre no puede estar vacío.", "Validación", JOptionPane.WARNING_MESSAGE);
+                    txtNombre.requestFocus();
+                    return;
+                }
+                if (h.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Debe ingresar una hora válida (HH:MM).", "Validación", JOptionPane.WARNING_MESSAGE);
+                    txtHora.requestFocus();
+                    return;
+                }
+                if (duracionStr.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Debe ingresar la duración en minutos.", "Validación", JOptionPane.WARNING_MESSAGE);
+                    txtDuracion.requestFocus();
+                    return;
+                }
+
+                int duracionMinutos = Integer.parseInt(duracionStr);
+                h = h + ":00"; // Agrega los segundos requeridos para la base de datos
+
+                // Envío al service del backend de Empresa
+                if (service.guardarActividad(nom, d, imp, cat.toString(), h, duracionMinutos)) {
+                    JOptionPane.showMessageDialog(this, "✅ Actividad registrada con éxito en el cronograma.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Limpiamos el formulario para una nueva carga rápida
+                    txtNombre.setText("");
+                    txtHora.setText("");
+                    txtDescripcion.setText("");
+                    txtDuracion.setText("");
+                    comboImp.setSelectedItem("MEDIA");
+                    txtNombre.requestFocus();
+                } else {
+                    JOptionPane.showMessageDialog(this, "❌ No se pudo guardar la actividad en la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "⚠️ La duración debe ser un número entero válido.", "Error de Formato", JOptionPane.ERROR_MESSAGE);
+                txtDuracion.requestFocus();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Ocurrió un error inesperado: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-        } catch(Exception e) { }
+        });
+
+        // Inyectamos el panel recién construido en el contenedor dinámico principal
+        cambiarPanelDinamico(pnlCrearActividad);
     }
 
     private void asignarImportancia() {

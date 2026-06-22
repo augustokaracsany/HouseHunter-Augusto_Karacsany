@@ -441,7 +441,7 @@ public class EmpresaMenu {
                 throw new Exception("Formato de hora inválido. Use HH:MM");
             }
             
-            if (service.guardarActividad(nombre, desc, importanciaStr, categoria, horaFormateada)) {
+            if (service.guardarActividad(nombre, desc, importanciaStr, categoria, horaFormateada, 0)) {
                 JOptionPane.showMessageDialog(null, "Actividad agregó al cronograma con éxito.");
             } else {
                 JOptionPane.showMessageDialog(null, "Error al insertar la actividad en la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
