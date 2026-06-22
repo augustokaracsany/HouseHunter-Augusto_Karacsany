@@ -506,15 +506,117 @@ public class EmpresaMenuGrafico extends JFrame {
         JOptionPane.showMessageDialog(this, "Cronograma sincronizado con la BD.");
     }
 
+// --- NUEVO MÓDULO: DETALLE DE CRONOGRAMA DINÁMICO ---
+    
     private void verDetalleActividadesEmpresa() {
-        List<Actividad> acts = service.obtenerActividades();
-        if (acts.isEmpty()) return;
-        String[] noms = acts.stream().map(Actividad::getNombre).toArray(String[]::new);
-        int idx = JOptionPane.showOptionDialog(this, "Consultar:", "Cronograma", 0, 3, null, noms, noms[0]);
-        if (idx >= 0) {
-            Actividad a = acts.get(idx);
-            JOptionPane.showMessageDialog(this, a.getNombre() + "\n" + a.getDescripcion() + "\nCat: " + a.getCategoria());
+        // Obtenemos las actividades asociadas a la reserva de la empresa
+        List<Actividad> actividades = service.obtenerActividades();
+        
+        if (actividades.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No hay actividades registradas en este cronograma.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
+            return;
         }
+
+        // Definimos las columnas idénticas al panel de Invitado
+        String[] columnas = {"Actividad / Módulo", "Horario", "Duración", "Categoría", "Prioridad"};
+        String[][] datos = new String[actividades.size()][5];
+        
+        for (int i = 0; i < actividades.size(); i++) {
+            Actividad a = actividades.get(i);
+            datos[i][0] = a.getNombre();
+            // Evitamos posibles NullPointerException si la fecha/hora viene vacía
+            datos[i][1] = (a.getFechaHora() != null) ? a.getFechaHora().toLocalTime().toString() : "N/A";
+            datos[i][2] = a.getDuracionMinutos() + " min";
+            datos[i][3] = a.getCategoria();
+            datos[i][4] = (a.getImportancia() != null) ? a.getImportancia().name() : "MEDIA"; 
+        }
+
+        // Inyectamos la tabla en el panel central pasando la lista original
+        mostrarCronogramaEnTabla(columnas, datos, actividades);
+    }
+
+    private void mostrarCronogramaEnTabla(String[] columnas, String[][] datos, List<Actividad> listaActividades) {
+        pnlDinamico.removeAll(); 
+        pnlDinamico.setLayout(new BorderLayout(0, 10));
+        pnlDinamico.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        JTable tabla = new JTable(datos, columnas);
+        tabla.setFillsViewportHeight(true);
+        tabla.setRowHeight(25);
+        tabla.getTableHeader().setFont(new Font("Tahoma", Font.BOLD, 12));
+        tabla.setDefaultEditor(Object.class, null); // Celda de solo lectura
+
+        // Escuchador de clicks para abrir la vista extendida
+        tabla.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (e.getClickCount() == 1) { 
+                    int filaSeleccionada = tabla.getSelectedRow();
+                    if (filaSeleccionada >= 0) {
+                        Actividad actividad = listaActividades.get(filaSeleccionada);
+                        mostrarDetalleAbsoluto(actividad);
+                    }
+                }
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(tabla);
+        pnlDinamico.add(scrollPane, BorderLayout.CENTER);
+
+        JButton btnVolver = new JButton("← VOLVER AL MENÚ DE PLANIFICACIÓN");
+        btnVolver.setFont(new Font("Tahoma", Font.BOLD, 11));
+        btnVolver.addActionListener(e -> mostrarSubMenuCronograma());
+        pnlDinamico.add(btnVolver, BorderLayout.SOUTH);
+
+        pnlDinamico.revalidate();
+        pnlDinamico.repaint();
+    }
+
+    private void mostrarDetalleAbsoluto(Actividad a) {
+        pnlDinamico.removeAll();
+        pnlDinamico.setLayout(new BorderLayout(20, 20));
+        pnlDinamico.setBorder(new EmptyBorder(30, 40, 30, 40));
+
+        // Cálculo dinámico de fin de bloque
+        String strHorario = "No definido";
+        String strFecha = "No definida";
+        if (a.getFechaHora() != null) {
+            java.time.LocalTime horaInicio = a.getFechaHora().toLocalTime();
+            java.time.LocalTime horaFin = horaInicio.plusMinutes(a.getDuracionMinutos());
+            strHorario = horaInicio + " hs a " + horaFin + " hs";
+            strFecha = a.getFechaHora().toLocalDate().toString();
+        }
+
+        String detalleHtml = "<html><body style='width: 450px; font-family: Tahoma;'>"
+                + "<h2 style='color: #0055ff; margin-bottom: 2px;'>" + a.getNombre().toUpperCase() + "</h2>"
+                + "<p style='color: gray; font-size: 11px; margin-top: 0px;'>Categoría: <b>" + a.getCategoria() + "</b> | Prioridad: <b>" + a.getImportancia() + "</b></p>"
+                + "<hr size='1' color='#cccccc'>"
+                + "<br>"
+                + "<table style='font-size: 13px; font-family: Tahoma;' cellpadding='4'>"
+                + "  <tr><td><b>Fecha programada:</b></td><td>" + strFecha + "</td></tr>"
+                + "  <tr><td><b>Franja horaria:</b></td><td><span style='color: green; font-weight: bold;'>" + strHorario + "</span></td></tr>"
+                + "  <tr><td><b>Duración estimada:</b></td><td>" + a.getDuracionMinutos() + " minutos</td></tr>"
+                + "</table>"
+                + "<br><br>"
+                + "<div style='background-color: #f7f9fa; padding: 12px; border-left: 4px solid #0055ff;'>"
+                + "  <b style='color: #333;'>Descripción y Notas del Módulo:</b><br>"
+                + "  <p style='font-style: italic; color: #555; margin-top: 5px;'>" + (a.getDescripcion() != null && !a.getDescripcion().isEmpty() ? a.getDescripcion() : "Sin especificaciones cargadas.") + "</p>"
+                + "</div>"
+                + "</body></html>";
+
+        JLabel lblDetalle = new JLabel(detalleHtml);
+        lblDetalle.setHorizontalAlignment(SwingConstants.LEFT);
+        lblDetalle.setVerticalAlignment(SwingConstants.TOP);
+        pnlDinamico.add(lblDetalle, BorderLayout.CENTER);
+
+        // Botón para salir del detalle y retornar al listado tabular
+        JButton btnRegresarTabla = new JButton("← VOLVER A LA LISTA");
+        btnRegresarTabla.setFont(new Font("Tahoma", Font.BOLD, 11));
+        btnRegresarTabla.addActionListener(e -> verDetalleActividadesEmpresa());
+        pnlDinamico.add(btnRegresarTabla, BorderLayout.SOUTH);
+
+        pnlDinamico.revalidate();
+        pnlDinamico.repaint();
     }
 
     private void listarInvitados() {
@@ -565,4 +667,6 @@ public class EmpresaMenuGrafico extends JFrame {
         Map<String, Object> stats = service.obtenerEstadisticas();
         JOptionPane.showMessageDialog(this, "Total Invitados: " + stats.getOrDefault("totalInvitados", 0));
     }
+    
+    
 }
