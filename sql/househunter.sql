@@ -23,6 +23,26 @@ SET time_zone = "+00:00";
 
 -- --------------------------------------------------------
 
+DELIMITER //
+
+CREATE PROCEDURE GenerarHabitaciones()
+BEGIN
+    DECLARE i INT DEFAULT 301;
+    WHILE i <= 500 DO
+        INSERT INTO habitaciones (numero, tipo, capacidad, estado) 
+        VALUES (CAST(i AS CHAR), 'Standard', 2, 'Libre');
+        SET i = i + 1;
+    END WHILE;
+END //
+
+DELIMITER ;
+
+-- Ejecutamos el procedimiento
+CALL GenerarHabitaciones();
+
+-- Borramos el procedimiento después de usarlo para no ensuciar la BD
+DROP PROCEDURE GenerarHabitaciones;
+
 --
 -- Estructura de tabla para la tabla `actividades`
 --
@@ -587,6 +607,8 @@ ALTER TABLE `reservas_hotel`
   ADD CONSTRAINT `reservas_hotel_ibfk_1` FOREIGN KEY (`id_empresa`) REFERENCES `usuarios` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `reservas_hotel_ibfk_2` FOREIGN KEY (`id_plantilla`) REFERENCES `plantillas` (`id`) ON DELETE SET NULL;
 COMMIT;
+
+ALTER TABLE actividades ADD COLUMN duracion_minutos INT DEFAULT 0;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
