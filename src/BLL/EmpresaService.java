@@ -77,14 +77,19 @@ public class EmpresaService {
      // Módulo: ( Cronograma. / Planificación. )
      // Inserta una actividad específica mapeando directamente a la tabla relacional.
      //
-    public boolean guardarActividad(String nombre, String desc, String importancia, String categoria, String hora) {
+    //
+    // Módulo: ( Cronograma. / Planificación. )
+    // Inserta una actividad específica mapeando directamente a la tabla relacional incluyendo duración.
+    //
+    public boolean guardarActividad(String nombre, String desc, String importancia, String categoria, String hora, int duracionMinutos) {
         return actividadController.guardarActividad(
             empresa.getReservaActual().getId(), 
             nombre, 
             desc, 
             importancia, 
             categoria, 
-            hora
+            hora,
+            duracionMinutos // <- Delego el entero al controlador
         );
     }
 
