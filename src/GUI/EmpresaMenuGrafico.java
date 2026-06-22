@@ -114,6 +114,9 @@ public class EmpresaMenuGrafico extends JFrame {
         btnCerrarSesion.setForeground(Color.RED);
         btnCerrarSesion.addActionListener(e -> {
             JOptionPane.showMessageDialog(this, "Cerrando sesión de " + empresa.getNombre());
+
+            MainMenuGrafico main = new MainMenuGrafico();
+            main.setVisible(true);
             dispose();
         });
         pnlLateral.add(btnCerrarSesion);
