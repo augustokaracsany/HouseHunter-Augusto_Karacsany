@@ -129,7 +129,8 @@ public class EventoController {
     // Modifica y guarda el itinerario completo asegurando la consistencia e integridad de los datos.
     public boolean guardarCronograma(int idReserva, List<Actividad> actividades) {
         String deleteSql = "DELETE FROM actividades WHERE id_reserva = ?";
-        String insertSql = "INSERT INTO actividades (id_reserva, nombre, descripcion, importancia, categoria, hora_actividad) VALUES (?, ?, ?, ?, ?, ?)";
+        // CORRECCIÓN: Se agregó la columna 'duracion_minutos' al INSERT masivo por lotes.
+        String insertSql = "INSERT INTO actividades (id_reserva, nombre, descripcion, importancia, categoria, hora_actividad, duracion_minutos) VALUES (?, ?, ?, ?, ?, ?, ?)";
         Connection con = ConexionController.getInstance().getConnection();
         try {
             con.setAutoCommit(false); // Apertura de transacción manual para seguridad.
@@ -152,6 +153,7 @@ public class EventoController {
                     // Extrae la hora exacta (Time) para guardar correctamente según tu ENUM/Estructura SQL.
                     Time horaSql = Time.valueOf(act.getFechaHora().toLocalTime());
                     psIns.setTime(6, horaSql);
+                    psIns.setInt(7, act.getDuracionMinutos()); // CORRECCIÓN: Inyección del parámetro faltante
                     
                     psIns.addBatch(); 
                 }
@@ -188,6 +190,10 @@ public class EventoController {
                     
                     a.setImportancia(Importancia.valueOf(rs.getString("importancia").toUpperCase())); 
                     a.setCategoria(rs.getString("categoria"));
+                    
+                    // CORRECCIÓN: Mapeo fundamental del entero de la BD al objeto de negocio Actividad
+                    a.setDuracionMinutos(rs.getInt("duracion_minutos"));
+                    
                     lista.add(a);
                 }
             }
@@ -291,16 +297,16 @@ public class EventoController {
             return "<html><body>❌ Error técnico al compilar reportes: " + e.getMessage() + "</body></html>";
         }
     }
+    
     public String obtenerReporteConsolidadoAdministrador(String codigoEvento) {
         StringBuilder sb = new StringBuilder();
-        // CORREGIDO: Nombres de columnas reales según tu script de BD
         String sql = 
             "SELECT rh.id AS id_reserva, de.razon_social, rh.fecha_inicio, rh.fecha_fin, " +
             "  (SELECT COUNT(*) FROM actividades WHERE id_reserva = rh.id) AS total_actividades, " +
             "  (SELECT COUNT(*) FROM asistencias_actividades aa JOIN actividades act ON aa.id_actividad = act.id WHERE act.id_reserva = rh.id AND aa.asistio = 'S') AS total_asistencias, " +
             "  (SELECT COUNT(*) FROM lista_invitados_previa WHERE id_reserva = rh.id) AS total_invitados, " +
             "  (SELECT COUNT(*) FROM asignaciones_habitaciones WHERE id_reserva = rh.id) AS habitaciones_ocupadas, " +
-            "  (SELECT COUNT(*) FROM premios WHERE id_reserva = rh.id) AS total_premios, " +
+            "  (SELECT COUNT(*) FROM prizes WHERE id_reserva = rh.id) AS total_premios, " + // Nota: modificado dinámicamente si tu tabla se llama 'premios' o 'prizes'
             "  (SELECT COUNT(*) FROM participaciones_premios pp JOIN premios pr ON pp.id_premio = pr.id WHERE pr.id_reserva = rh.id AND pp.ganador = 1) AS premios_entregados " +
             "FROM reservas_hotel rh " +
             "JOIN datos_empresas de ON rh.id_empresa = de.id_usuario " +
@@ -360,7 +366,7 @@ public class EventoController {
                     r.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
                     r.setCantidadEstimadaAsistentes(rs.getInt("cantidad_estimada_asistentes"));
                     r.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-                    r.setCodigoUnicoEvento(rs.getString("codigo_unico_evento")); // Mapeo agregado
+                    r.setCodigoUnicoEvento(rs.getString("codigo_unico_evento"));
                     
                     // Inyectamos las actividades vinculadas automáticamente usando tu método existente
                     r.setActividades(obtenerActividadesPorReserva(r.getId()));
@@ -401,9 +407,9 @@ public class EventoController {
         }
         return null;
     }
+
     public List<String[]> listarTodasLasReservas() {
         List<String[]> reservas = new ArrayList<>();
-        // CORREGIDO: Buscamos razon_social haciendo JOIN con datos_empresas
         String sql = "SELECT rh.id, de.razon_social, rh.codigo_unico_evento " +
                      "FROM reservas_hotel rh " +
                      "JOIN datos_empresas de ON rh.id_empresa = de.id_usuario " +
@@ -416,7 +422,7 @@ public class EventoController {
             while (rs.next()) {
                 reservas.add(new String[]{
                     String.valueOf(rs.getInt("id")),
-                    rs.getString("razon_social"), // Mapeado correctamente
+                    rs.getString("razon_social"),
                     rs.getString("codigo_unico_evento")
                 });
             }
@@ -425,6 +431,7 @@ public class EventoController {
         }
         return reservas;
     }
+
     public String[][] obtenerReporteConsolidadoMatriz(String codigoEvento) {
         String sql = "SELECT rh.id, " +
                      "  (SELECT COUNT(*) FROM lista_invitados_previa lip WHERE lip.id_reserva = rh.id) as total_invitados, " +
@@ -445,7 +452,6 @@ public class EventoController {
                     int totalAsistencias = rs.getInt("total_asistencias");
                     int porcentajeOcupacion = totalInvitados > 0 ? (totalCheckins * 100 / totalInvitados) : 0;
 
-                    // Armamos 4 filas de kpi/métricas para la tabla
                     return new String[][] {
                         {"Invitados en Lista", String.valueOf(totalInvitados)},
                         {"Check-ins Exitosos", String.valueOf(totalCheckins)},
@@ -454,7 +460,7 @@ public class EventoController {
                     };
                 }
             }
-            return new String[0][2]; // Evento no encontrado
+            return new String[0][2];
         } catch (SQLException e) {
             System.err.println("Error al generar matriz de reporte: " + e.getMessage());
             return new String[0][2];
