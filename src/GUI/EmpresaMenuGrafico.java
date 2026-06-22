@@ -16,9 +16,12 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.table.DefaultTableModel;
 
 import BLL.Actividad;
 import BLL.CategoriaActividad;
@@ -29,6 +32,7 @@ import BLL.Invitado;
 import BLL.Plantilla;
 import BLL.Reserva;
 import BLL.Rol;
+import DLL.InvitadoController;
 
 public class EmpresaMenuGrafico extends JFrame {
 
@@ -151,6 +155,7 @@ public class EmpresaMenuGrafico extends JFrame {
         lblVistaPrevia.setHorizontalAlignment(SwingConstants.CENTER);
         pnlDinamico.add(lblVistaPrevia, BorderLayout.CENTER);
     }
+    
     // Métodos de Control y Lógica de Paneles Dinámicos
 
     private void actualizarInfoReserva() {
@@ -178,7 +183,7 @@ public class EmpresaMenuGrafico extends JFrame {
         pnlDinamico.repaint();
     }
 
-// Sub-Menús Visuales en Panel Central
+    // Sub-Menús Visuales en Panel Central
 
     private void mostrarSubMenuGestion() {
         JPanel pnlGestion = new JPanel(new GridLayout(5, 1, 10, 10));
@@ -510,15 +515,47 @@ public class EmpresaMenuGrafico extends JFrame {
     }
 
     private void listarInvitados() {
-        List<Invitado> invs = service.obtenerInvitados();
-        if (invs.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "No hay invitados cargados.");
+        if (empresa.getReservaActual() == null) {
+            JOptionPane.showMessageDialog(this, "No hay ninguna reserva activa para listar invitados.", "Aviso", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        StringBuilder sb = new StringBuilder();
-        invs.forEach(i -> sb.append("- ").append(i.getNombre())
-                           .append(" (").append(i.getEmail()).append(")\n"));
-        JOptionPane.showMessageDialog(this, sb.toString());
+
+        // 1. Definimos las cabeceras de la JTable
+        String[] columnas = {"Nombre Invitado", "Habitación", "Token de Acceso"};
+
+        // 2. Traemos la información fresca usando el ID dinámico real
+        int idReservaActiva = empresa.getReservaActual().getId();
+        List<String[]> listaInvitados = InvitadoController.getInstance().listarInvitadosConHabitacionYToken(idReservaActiva);
+
+        // 3. Transformamos la lista en la matriz bidimensional
+        String[][] datos = new String[listaInvitados.size()][3];
+        for (int i = 0; i < listaInvitados.size(); i++) {
+            datos[i] = listaInvitados.get(i);
+        }
+
+        // 4. Creamos el modelo y la tabla de solo lectura
+        DefaultTableModel modelo = new DefaultTableModel(datos, columnas) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; 
+            }
+        };
+
+        JTable tablaInvitados = new JTable(modelo);
+        JScrollPane scrollPane = new JScrollPane(tablaInvitados);
+
+        // Seteo estético básico para las filas
+        tablaInvitados.setFillsViewportHeight(true);
+        tablaInvitados.setRowHeight(22);
+
+        // 5. Limpiamos pnlDinamico e inyectamos la tabla con su barra de Scroll
+        pnlDinamico.removeAll();
+        pnlDinamico.setLayout(new BorderLayout());
+        pnlDinamico.add(scrollPane, BorderLayout.CENTER);
+
+        // 6. Refrescamos de forma segura la interfaz gráfica
+        pnlDinamico.revalidate();
+        pnlDinamico.repaint();
     }
 
     private void mostrarEstadisticas() {

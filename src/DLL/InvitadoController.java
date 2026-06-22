@@ -87,10 +87,9 @@ public class InvitadoController {
         }
         return lista;
     }
-    
-    // =========================================================================
+
     // REFACTOR CRÍTICO: Sincroniza el ID de lista previa con el ID de Usuario Real
-    // =========================================================================
+
     public Invitado validarToken(String token) {
         String sql = "SELECT lip.*, rh.fecha_inicio, rh.fecha_fin, dp.id_usuario AS id_usuario_real " +
                      "FROM lista_invitados_previa lip " +
@@ -227,5 +226,45 @@ public class InvitadoController {
             e.printStackTrace();
             return false;
         }
+    }
+    // Nuevo PreparedStatement. 
+    // Me quedó linda esta Query.
+    public List<String[]> listarInvitadosConHabitacionYToken(int idReserva) {
+        List<String[]> lista = new ArrayList<>();
+        String sql = "SELECT lip.nombre, lip.apellido, h.numero AS habitacion, lip.token_acceso " +
+                     "FROM lista_invitados_previa lip " +
+                     "LEFT JOIN datos_personas dp ON lip.dni = dp.dni " +
+                     "LEFT JOIN asignaciones_habitaciones ah ON dp.id_usuario = ah.id_usuario AND ah.id_reserva = ? " +
+                     "LEFT JOIN habitaciones h ON ah.id_habitacion = h.id " +
+                     "WHERE lip.id_reserva = ?";
+
+        try (Connection con = ConexionController.getInstance().getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            
+            ps.setInt(1, idReserva);
+            ps.setInt(2, idReserva);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String nombreCompleto = rs.getString("nombre") + " " + rs.getString("apellido");
+                    
+                    String habitacion = rs.getString("habitacion");
+                    if (habitacion == null) {
+                        habitacion = "Sin Asignar";
+                    }
+                    
+                    String token = rs.getString("token_acceso");
+                    if (token == null || token.trim().isEmpty()) {
+                        token = "No Generado";
+                    }
+                    
+                    lista.add(new String[]{nombreCompleto, habitacion, token});
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al listar invitados con habitación: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return lista;
     }
 }
