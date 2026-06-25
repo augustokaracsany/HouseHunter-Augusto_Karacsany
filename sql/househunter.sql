@@ -23,25 +23,7 @@ SET time_zone = "+00:00";
 
 -- --------------------------------------------------------
 
-DELIMITER //
 
-CREATE PROCEDURE GenerarHabitaciones()
-BEGIN
-    DECLARE i INT DEFAULT 301;
-    WHILE i <= 500 DO
-        INSERT INTO habitaciones (numero, tipo, capacidad, estado) 
-        VALUES (CAST(i AS CHAR), 'Standard', 2, 'Libre');
-        SET i = i + 1;
-    END WHILE;
-END //
-
-DELIMITER ;
-
--- Ejecutamos el procedimiento
-CALL GenerarHabitaciones();
-
--- Borramos el procedimiento después de usarlo para no ensuciar la BD
-DROP PROCEDURE GenerarHabitaciones;
 
 --
 -- Estructura de tabla para la tabla `actividades`
